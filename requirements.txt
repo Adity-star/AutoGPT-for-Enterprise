@@ -1,0 +1,5 @@
+openai 
+pytrends 
+praw 
+requests 
+beautifulsoup4
