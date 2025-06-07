@@ -1,0 +1,24 @@
+[project]
+name = "autogpt_enterprise"
+version = "0.1.0"
+description = "AutoGPT agent system "
+authors = [{ name = "Aditya AK", email = "aakuskar.980@gmail.com" }]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "praw",
+    "requests",
+    "beautifulsoup4",
+    "pytrends",
+    "openai"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "autogpt_core"}
+
+[tool.setuptools.packages.find]
+where = ["autogpt_core"]

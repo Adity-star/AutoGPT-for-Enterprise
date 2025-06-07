@@ -1,5 +1,7 @@
 openai 
 pytrends 
-praw 
+praw   #  Python Reddit API Wrapper
 requests 
 beautifulsoup4
+pyyaml
+-e .
