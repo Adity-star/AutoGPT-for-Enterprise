@@ -1,7 +1,10 @@
-openai 
+openai==0.28
 pytrends 
 praw   #  Python Reddit API Wrapper
 requests 
 beautifulsoup4
 pyyaml
+langgraph
+python-dotenv
+google-generativeai
 -e .

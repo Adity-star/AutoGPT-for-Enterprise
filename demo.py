@@ -4,7 +4,7 @@ logger.info("This is an info message")
 logger.warning("This is a warning")
 logger.error("This is an error")
 
-from modules.market_researcher.rebbit_service import RedditService
+
 
 '''
 # Basic usage
@@ -22,7 +22,8 @@ posts = reddit_service.get_trending_posts(
 )
 
 '''
-reddit_service = RedditService()
+from modules.market_researcher.rebbit_service import RebbitService
+reddit_service = RebbitService()
 
 # Get trending posts from multiple subreddits
 posts = reddit_service.get_business_trending_posts(limit=10)
@@ -37,3 +38,27 @@ for i, post in enumerate(posts, 1):
     print(f"   Age: {post['age_hours']:.1f} hours")
     print(f"   URL: {post['permalink']}")
     print("-" * 80)
+
+
+'''
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+# Load environment variables (make sure your GOOGLE_API_KEY is in the environment)
+load_dotenv()
+
+# Configure the API key (required for Gemini)
+
+# Create a model instance
+model = genai.GenerativeModel("gemini-2.0-flash")
+
+# Define the prompt
+prompt = "Generate a list of 5 business ideas based on current tech trends"
+
+# Generate content
+response = model.generate_content(prompt)
+
+# Print the generated text
+print(response.text)
+'''
+

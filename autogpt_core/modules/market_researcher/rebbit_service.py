@@ -1,5 +1,4 @@
 # services/reddit_service.py
-
 import praw
 import os
 import time
@@ -26,7 +25,7 @@ def load_subreddits(category: str = "business", config_path: str = "config/subre
         return []
 
 
-class RedditService:
+class RebbitService:
     def __init__(self):
         self.reddit = self._get_reddit_client()
         self.rate_limit_delay = 2  # seconds between requests
@@ -196,6 +195,6 @@ class RedditService:
 # Convenience function for backward compatibility
 def get_trending_posts(subreddit="AItools", limit=10):
     """Legacy function - uses new RedditService"""
-    service = RedditService()
+    service = RebbitService()
     return service.get_trending_posts([subreddit], limit)
 
