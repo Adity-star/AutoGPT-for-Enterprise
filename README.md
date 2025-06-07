@@ -2,7 +2,7 @@
  An AI system that can create, manage, and optimize an entire small business — from idea to marketing to reporting — with zero human intervention.
 
 ---
-
+```bash
 auto-gpt-enterprise-ai/
 │
 ├── README.md
@@ -72,3 +72,4 @@ auto-gpt-enterprise-ai/
     ├── architecture.md             # High-level system design
     ├── modules.md                  # Module-specific explanations
     └── api_keys.md                 # Setup for external integrations
+```
