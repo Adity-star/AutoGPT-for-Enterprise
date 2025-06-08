@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Market Research Agent</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f9f9f9;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+    }
+    .mermaid {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Market Research Agent Flow</h1>
+
+  <pre class="mermaid">
+graph TD
+  start([Start]) --> get_trending_industries[Get Trending Industries<br/>(RedditService)]
+  get_trending_industries --> generate_idea_list[Generate Idea List<br/>(OpenAI)]
+  generate_idea_list --> analyze_demand[Analyze Demand<br/>(Google Trends + OpenAI)]
+  analyze_demand --> analyze_competition[Analyze Competition<br/>(SerpAPI)]
+  analyze_competition --> analyze_unit_economics[Analyze Unit Economics<br/>(OpenAI)]
+  analyze_unit_economics --> score_ideas[Score Ideas<br/>(OpenAI Evaluation)]
+  score_ideas --> validate_top_ideas[Validate Top Ideas<br/>(VC Feedback via OpenAI)]
+  validate_top_ideas --> select_best_idea[Select Best Idea<br/>(Ranking)]
+  select_best_idea --> output_idea([Output Final Business Idea])
+  </pre>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+  </script>
+</body>
+</html>
