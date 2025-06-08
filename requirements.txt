@@ -7,4 +7,5 @@ pyyaml
 langgraph
 python-dotenv
 google-generativeai
+pytrends
 -e .
