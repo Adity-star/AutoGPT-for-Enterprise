@@ -2,6 +2,12 @@ from pytrends.request import TrendReq
 from typing import Dict, Any
 import logging
 from langgraph.graph import StateGraph,END
+import requests
+from bs4 import BeautifulSoup
+import re
+import time 
+from serpapi import GoogleSearch
+import os
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -42,5 +48,31 @@ def export_graph_to_mermaid(graph: StateGraph) -> str:
             lines.append(f"    {source} --> {destination}")
 
     return "\n".join(lines)
+
+
+def search_competitors(idea, max_results=5):
+    try:
+        search = GoogleSearch({
+            "q": f"{idea} competitors",
+            "api_key": os.getenv("SERPAPI_API_KEY"),
+            "num": max_results
+        })
+        results = search.get_dict()
+        competitors = []
+
+        for result in results.get("organic_results", [])[:max_results]:
+            title = result.get("title")
+            if title:
+                competitors.append(title.strip())
+
+        return competitors
+
+    except Exception as e:
+        print(f"[SerpAPI error]: {e}")
+        return []
+
+
+
+
 
 
