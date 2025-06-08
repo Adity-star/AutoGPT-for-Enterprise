@@ -1,23 +1,24 @@
 import sys
 import os
+import json
 from typing import TypedDict, List, Dict, Any
 
-# Add the project root directory to Python path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
-sys.path.insert(0, project_root)
-
-print("Running Python from:", sys.executable)
-
-from autogpt_core.modules.market_researcher.rebbit_service import RebbitService
 from langgraph.graph import StateGraph, END 
 from langgraph.graph import add_messages
-from dotenv import load_dotenv
 import google.generativeai as genai
-from config.prompts import get_idea_generation_prompt
-import json
 
+from modules.market_researcher.rebbit_service import RebbitService
+from config.prompts import get_idea_generation_prompt
+from utils.helper import safe_parse_ideas
+from utils.logger import logging
+from dotenv import load_dotenv
 
 load_dotenv()
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class MarketResearchState(TypedDict):
     trending_posts: List[Dict[str, Any]]
@@ -34,18 +35,18 @@ def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
     topics = [post['title'] for post in posts]
 
     prompt = get_idea_generation_prompt("\n".join(topics))
+    
+    print(f"🧠 Sending prompt:\n{prompt}")
 
     model = genai.GenerativeModel("gemini-2.0-flash")
     response = model.generate_content(prompt)
     
-    try:
-        ideas = json.loads(response.text)
-    except json.JSONDecodeError:
-        print("Could not parse JSON, response was:")
-        print(response.text)
-        ideas = {"ideas": []}
+    ideas = safe_parse_ideas(response.text)
 
-    return {"idea_list": ideas.get("ideas", [])}
+    return {
+        "trending_posts": state.get("trending_posts", []),
+        "idea_list": ideas
+    }
 
 graph = StateGraph(state_schema=MarketResearchState)
 
@@ -58,4 +59,5 @@ graph.add_edge("get_trending_industries", "generate_idea_list")
 market_research_agent = graph.compile()
 result = market_research_agent.invoke({})
 
-print(result)
+print("✅ Final result:")
+print(json.dumps(result, indent=2))
