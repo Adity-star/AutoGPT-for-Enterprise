@@ -1,0 +1,73 @@
+{
+  "info": {
+    "name": "Market Research Agent",
+    "description": "API collection for Market Research Agent (LangGraph-based)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Run Full Agent",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "http://localhost:8000/run", "host": ["localhost"], "port": "8000", "path": ["run"] },
+        "body": { "mode": "raw", "raw": "{}" }
+      }
+    },
+    {
+      "name": "Get Trending Topics",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "http://localhost:8000/trending", "host": ["localhost"], "port": "8000", "path": ["trending"] }
+      }
+    },
+    {
+      "name": "Generate Business Ideas",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "http://localhost:8000/generate-ideas", "host": ["localhost"], "port": "8000", "path": ["generate-ideas"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"trending_posts\": [\"AI for HR\", \"No-code tools for SMBs\"] }"
+        }
+      }
+    },
+    {
+      "name": "Analyze Demand",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "http://localhost:8000/analyze-demand", "host": ["localhost"], "port": "8000", "path": ["analyze-demand"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"idea_list\": [\"AI Job Screener\", \"Drag & Drop CRM\"] }"
+        }
+      }
+    },
+    {
+      "name": "Analyze Competition",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "http://localhost:8000/analyze-competition", "host": ["localhost"], "port": "8000", "path": ["analyze-competition"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"idea_list\": [\"AI Job Screener\", \"Drag & Drop CRM\"] }"
+        }
+      }
+    },
+    {
+      "name": "Score & Select Ideas",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "http://localhost:8000/score-ideas", "host": ["localhost"], "port": "8000", "path": ["score-ideas"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"scored_ideas\": [{ \"idea\": \"AI Job Screener\", \"trend\": 88, \"competition\": 2 }] }"
+        }
+      }
+    }
+  ]
+}
