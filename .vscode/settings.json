@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./autogpt_core",
+        "./autogpt_core"
+    ]
+}
