@@ -15,11 +15,9 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph
 
-
-from services.rebbit_service import RebbitService
+from services.rebbit_service import RedditService
 from config.prompts import get_idea_generation_prompt
-from services.support import analyze_ideas_with_trends, export_graph_to_mermaid, search_competitors
-
+from services.support_tools import analyze_ideas_with_trends, search_competitors
 
 # Load environment variables
 load_dotenv()
@@ -47,7 +45,6 @@ logger.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
-
 @dataclass
 class AnalysisConfig:
     """Configuration for the market research analysis"""
@@ -57,6 +54,33 @@ class AnalysisConfig:
     enable_caching: bool = True
     cache_ttl_minutes: int = 60
     model_name: str = "gemini-1.5-flash"
+
+    def validate(self):
+        """Validate configuration parameters"""
+        if self.max_retries < 0:
+            raise ValueError(f"max_retries must be non-negative: {self.max_retries}")
+        if self.batch_size < 1:
+            raise ValueError(f"batch_size must be at least 1: {self.batch_size}")
+        if self.timeout < 1:
+            raise ValueError(f"timeout must be at least 1 second: {self.timeout}")
+        if self.cache_ttl_minutes < 1:
+            raise ValueError(f"cache_ttl_minutes must be at least 1 minute: {self.cache_ttl_minutes}")
+
+# Configure structured logging
+os.makedirs("logs", exist_ok=True)
+log_file = os.path.join('logs', 'market_research.log')
+file_handler = logging.FileHandler(log_file)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s'))
+
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(logging.Formatter('%(message)s'))
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 
 @dataclass
@@ -278,7 +302,7 @@ async def get_trending_industries(state: MarketResearchState) -> MarketResearchS
         
         # Try to use RebbitService if available
         try:
-            reddit = RebbitService()
+            reddit = RedditService()
             # Run Reddit API call in thread executor
             top_posts = await asyncio.get_event_loop().run_in_executor(
                 None, 
@@ -745,11 +769,6 @@ async def store_results_to_file(state: MarketResearchState) -> MarketResearchSta
                 "total_ideas_processed": len(state.idea_list),
                 "total_errors": len(state.errors)
             },
-            "trending_posts": state.trending_posts,
-            "generated_ideas": state.idea_list,
-            "analysis_results": state.parallel_analysis,
-            "scored_ideas": state.scored_ideas,
-            "validated_ideas": state.validated_ideas,
             "best_business_idea": state.best_business_idea,
             "errors": state.errors,
             "config": {

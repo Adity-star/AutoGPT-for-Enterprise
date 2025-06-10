@@ -4,26 +4,20 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import uvicorn
 import asyncio
-import logging
+from utils.logger import logging
 from autogpt_core.modules.market_researcher.market_research import run_market_research_agent, AnalysisConfig
+from app.logging_config import setup_logging
+from app.error_handler import handle_exception, ValidationError, APIError
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('app.log')
-    ]
-)
-logger = logging.getLogger(__name__)
+# Configure logging with timestamped files
+logger = setup_logging("market_research_api")
 
 app = FastAPI(title="Market Research Agent API")
 
 # Allow your frontend (Streamlit or others) to access this API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In prod, specify domains explicitly
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,12 +33,25 @@ class MarketResearchRequest(BaseModel):
 class MarketResearchResponse(BaseModel):
     status: str
     best_idea: Optional[str] = None
-    error: Optional[str] = None
+    error: Optional[Dict[str, Any]] = None
 
 @app.post("/api/research", response_model=MarketResearchResponse)
 async def run_market_research(request: MarketResearchRequest):
     try:
         logger.info("Starting market research request")
+        
+        # Validate request parameters
+        if request.max_retries < 0:
+            raise ValidationError(
+                "max_retries must be non-negative",
+                details={"max_retries": request.max_retries}
+            )
+        
+        if request.batch_size < 1:
+            raise ValidationError(
+                "batch_size must be at least 1",
+                details={"batch_size": request.batch_size}
+            )
         
         # Create config from request
         config = AnalysisConfig(
@@ -67,11 +74,10 @@ async def run_market_research(request: MarketResearchRequest):
         )
         
     except Exception as e:
-        error_msg = f"Error running market research: {str(e)}"
-        logger.error(error_msg)
+        error_details = handle_exception(e)
         return MarketResearchResponse(
             status="error",
-            error=error_msg
+            error=error_details
         )
 
 @app.get("/api/health")

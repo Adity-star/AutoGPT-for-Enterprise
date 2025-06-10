@@ -14,7 +14,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def load_subreddits(category: str = "business", config_path: str = "config/subreddits.yaml") -> List[str]:
+def load_subreddits(category: str = "business", config_path: str = "autogpt_core/config/subreddits.yaml") -> List[str]:
     """Load subreddit names from YAML config"""
     try:
         with open(config_path, "r") as f:
@@ -25,7 +25,7 @@ def load_subreddits(category: str = "business", config_path: str = "config/subre
         return []
 
 
-class RebbitService:
+class RedditService:
     def __init__(self):
         self.reddit = self._get_reddit_client()
         self.rate_limit_delay = 2  # seconds between requests
@@ -195,6 +195,6 @@ class RebbitService:
 # Convenience function for backward compatibility
 def get_trending_posts(subreddit="AItools", limit=10):
     """Legacy function - uses new RedditService"""
-    service = RebbitService()
+    service = RedditService()
     return service.get_trending_posts([subreddit], limit)
 
