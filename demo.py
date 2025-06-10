@@ -1,27 +1,41 @@
-from utils.logger import logger
-
-logger.info("This is an info message")
-logger.warning("This is a warning")
-logger.error("This is an error")
+import sys
+print("Python executable:", sys.executable)
 
 
-# from autogpt_core.modules.market_researcher.rebbit_service import RebbitService
+
+from autogpt_core.utils.logger import logger
+
+from serpapi import GoogleSearch
 
 
+
+
+# Use the logger
+logger.info("I am the Best")
+logger.error("Error message here")
+
+print("GoogleSearch imported successfully!")
+
+from autogpt_core.services.support_tools import search_competitors
+#from autogpt_core.services.rebbit_service import RedditService
+
+#from autogpt_core.services.rebbit_service import get_trending_posts
 # # Basic usage
-# reddit_service = RebbitService()
-# posts = reddit_service.get_trending_posts(["AItools", "startups"], limit=10)
+# reddit_service = RedditService()
+# #posts = reddit_service.get_trending_posts(["AItools", "startups"], limit=10)
 
 # # Business-focused trending posts
 # business_posts = reddit_service.get_business_trending_posts(limit=10)
 
 # # Custom subreddits with different sorting
 # posts = reddit_service.get_trending_posts(
-#     subreddits=["entrepreneur", "business"], 
+#     subreddits=["smallbusiness", "business"], 
 #     limit=10, 
 #     sort_by="rising"
-# )
+#  )
 
+search_competitors("AI automation and workflow tools")
+#get_trending_posts(subreddit="business")
 
 # from autogpt_core.modules.market_researcher.rebbit_service import RebbitService
 # reddit_service = RebbitService()

@@ -1,24 +1,29 @@
- # Logging framework
+# Logging framework
 
 import logging
 import os
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
+from pathlib import Path
+from from_root import from_root
 
 # Constants
 LOG_DIR = 'logs'
 LOG_FILE_TIMESTAMP = datetime.now().strftime('%m_%d_%Y_%H_%M_%S')
 MAX_LOG_SIZE = 5 * 1024 * 1024  # 5 MB
-BACKUP_COUNT = 3  # Number of rotated log files to keep
+BACKUP_COUNT = 3  
 
 # Ensure log directory exists
-if not os.path.exists(LOG_DIR):
-    os.makedirs(LOG_DIR)
+log_dir_path = os.path.join(from_root(), LOG_DIR)
+os.makedirs(log_dir_path, exist_ok=True)
 
+# helper function to get log file path
 def get_log_file_path(filename_prefix: str = "app", use_timestamp: bool = True) -> str:
+    """
+    Constructs a log file path with optional timestamp.
+    """
     filename = f"{filename_prefix}_{LOG_FILE_TIMESTAMP}.log" if use_timestamp else f"{filename_prefix}.log"
-    return os.path.join(LOG_DIR, filename)
-
+    return os.path.join(log_dir_path, filename)
 
 # ANSI escape sequences for colors
 class LogColors:
@@ -48,12 +53,23 @@ class ColoredFormatter(logging.Formatter):
         record.msg = f"{color}{record.msg}{LogColors.RESET}"
         return super().format(record)
 
-
 def configure_logger(
     logger_name: str = "",
     level: int = logging.DEBUG,
     log_filename: str = None
 ) -> logging.Logger:
+    """
+    Configure a logger with both file and console handlers.
+    Each run creates a new timestamped log file.
+    
+    Args:
+        logger_name (str): Name of the logger
+        level (int): Logging level
+        log_filename (str, optional): Custom log filename. If None, generates timestamped name
+        
+    Returns:
+        logging.Logger: Configured logger instance
+    """
     logger = logging.getLogger(logger_name)
 
     # Prevent adding handlers multiple times
@@ -62,17 +78,27 @@ def configure_logger(
     
     logger.setLevel(level)
 
-    formatter = logging.Formatter("[ %(asctime)s ] %(name)s - %(levelname)s - %(message)s")
-    colored_formatter = ColoredFormatter("[ %(asctime)s ] %(name)s - %(levelname)s - %(message)s")
+    # Create formatters
+    file_formatter = logging.Formatter(
+        '[ %(asctime)s ] %(name)s - %(levelname)s - %(message)s'
+    )
+    colored_formatter = ColoredFormatter(
+        '[ %(asctime)s ] %(name)s - %(levelname)s - %(message)s'
+    )
 
-    # Setup file handler (plain, no color)
+    # Setup file handler with timestamped filename
     if log_filename is None:
-        log_filename = get_log_file_path()
-    file_handler = RotatingFileHandler(log_filename, maxBytes=MAX_LOG_SIZE, backupCount=BACKUP_COUNT)
-    file_handler.setFormatter(formatter)
+        log_filename = get_log_file_path(logger_name if logger_name else "app")
+    
+    file_handler = RotatingFileHandler(
+        log_filename,
+        maxBytes=MAX_LOG_SIZE,
+        backupCount=BACKUP_COUNT
+    )
+    file_handler.setFormatter(file_formatter)
     file_handler.setLevel(logging.DEBUG)
 
-    # Setup console handler (colored)
+    # Setup console handler with colored output
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(colored_formatter)
     console_handler.setLevel(logging.INFO)
@@ -82,7 +108,6 @@ def configure_logger(
 
     return logger
 
-
-
+# Create default logger
 logger = configure_logger()
 logger.info("Logger is configured and ready.")

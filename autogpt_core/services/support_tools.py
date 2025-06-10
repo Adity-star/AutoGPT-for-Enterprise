@@ -1,13 +1,15 @@
 from pytrends.request import TrendReq
 from typing import Dict, Any
 import logging
-from langgraph.graph import StateGraph,END
 import requests
 from bs4 import BeautifulSoup
 import re
 import time 
-#from serpapi import GoogleSearch
+from serpapi import GoogleSearch
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
@@ -38,16 +40,16 @@ def analyze_ideas_with_trends(state: MarketResearchState) -> MarketResearchState
     }
 
 
-def export_graph_to_mermaid(graph: StateGraph) -> str:
-    lines = ["graph TD"]
+# def export_graph_to_mermaid(graph: StateGraph) -> str:
+#     lines = ["graph TD"]
 
-    # graph.edges is likely a set of (source, destination) tuples
-    for edge in graph.edges:
-        if isinstance(edge, tuple) and len(edge) == 2:
-            source, destination = edge
-            lines.append(f"    {source} --> {destination}")
+#     # graph.edges is likely a set of (source, destination) tuples
+#     for edge in graph.edges:
+#         if isinstance(edge, tuple) and len(edge) == 2:
+#             source, destination = edge
+#             lines.append(f"    {source} --> {destination}")
 
-    return "\n".join(lines)
+#     return "\n".join(lines)
 
 
 def search_competitors(idea, max_results=5):
@@ -58,14 +60,17 @@ def search_competitors(idea, max_results=5):
             return []
 
         logger.info(f"Searching competitors for idea: {idea}")
-        search = GoogleSearch({
+
+        params = {
             "q": f"{idea} competitors",
-            "api_key": api_key,
             "num": max_results,
-            "engine": "google"  # Explicitly specify the search engine
-        })
-        
+            "engine": "google",
+            "api_key": api_key
+        }
+
+        search = GoogleSearch(params)
         results = search.get_dict()
+
         if "error" in results:
             logger.error(f"SerpAPI returned an error: {results['error']}")
             return []
@@ -82,9 +87,3 @@ def search_competitors(idea, max_results=5):
     except Exception as e:
         logger.error(f"SerpAPI error: {str(e)}")
         return []
-
-
-
-
-
-
