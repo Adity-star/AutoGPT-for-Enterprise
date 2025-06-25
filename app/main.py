@@ -10,6 +10,7 @@ from modules.market_researcher.graph import run_market_research_agent
 from modules.market_researcher.state import MarketResearchState, AnalysisConfig
 from app.logging_config import setup_logging
 from app.error_handler import handle_exception, ValidationError, APIError
+from modules.market_researcher.nodes import parallel_analysis
 
 # Configure logging with timestamped files
 logger = setup_logging("market_research_api")
@@ -69,9 +70,39 @@ async def run_market_research(request: MarketResearchRequest):
 
         return MarketResearchResponse(
             status="success",
-            best_idea=final_state.best_business_idea
+            best_idea=final_state
         )
 
+    except Exception as e:
+        error_details = handle_exception(e)
+        return MarketResearchResponse(
+            status="error",
+            error=error_details
+        )
+
+
+@app.post("/api/analyze_idea", response_model=MarketResearchResponse)
+async def analyze_single_idea(request: MarketResearchRequest):
+    try:
+        if not request.user_idea:
+            raise ValidationError("user_idea is required for single idea analysis", {})
+        config = AnalysisConfig(
+            max_retries=request.max_retries,
+            batch_size=request.batch_size,
+            timeout=request.timeout,
+            enable_caching=request.enable_caching,
+            cache_ttl_minutes=request.cache_ttl_minutes
+        )
+        state = MarketResearchState(
+            idea_list=[{"idea": request.user_idea}],
+            config=config
+        )
+        # Run only the parallel analysis node
+        analyzed_state = await parallel_analysis(state)
+        return MarketResearchResponse(
+            status="success",
+            best_idea=analyzed_state.parallel_analysis
+        )
     except Exception as e:
         error_details = handle_exception(e)
         return MarketResearchResponse(

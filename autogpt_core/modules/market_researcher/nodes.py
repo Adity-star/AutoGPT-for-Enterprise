@@ -5,7 +5,7 @@ import asyncio
 import logging
 import re
 from aiohttp import ClientTimeout
-from typing import List, Dict, Any, Optional, Callable, Coroutine, Union
+from typing import List, Dict, Any, Optional, Callable, Coroutine
 from functools import wraps
 from datetime import datetime, timedelta
 import sys
@@ -247,16 +247,12 @@ async def get_trending_industries(state: MarketResearchState) -> MarketResearchS
 
         # Try to use RedditService if available
         try:
-            reddit = RedditService(
-                client_id=Settings.REDDIT_CLIENT_ID,
-                client_secret=Settings.REDDIT_CLIENT_SECRET,
-                user_agent=Settings.REDDIT_USER_AGENT
-            )
+            reddit = RedditService()
             
             # Run Reddit API call in thread executor
             top_posts = await asyncio.get_event_loop().run_in_executor(
                 None, 
-                lambda: reddit.get_business_trending_posts(limit=10)
+                lambda: reddit.get_business_trending_posts()
             )
         except (NameError, AttributeError, Exception) as e:
             logger.warning(f"Reddit service unavailable: {e}. Using fallback data.")
