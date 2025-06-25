@@ -17,5 +17,6 @@ numpy>=1.26.2
 plotly>=5.18.0
 google-search-results 
 from_root
-google-serp-api   
+google-serp-api  
+pydantic-settings 
 -e .

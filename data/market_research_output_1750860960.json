@@ -1,0 +1,18 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2025-06-25T19:46:00.289420",
+    "execution_time_seconds": 0.101138,
+    "total_ideas_processed": 0,
+    "total_errors": 1
+  },
+  "best_business_idea": {},
+  "errors": [
+    "Failed to get trending industries: REDDIT_CLIENT_ID"
+  ],
+  "config": {
+    "max_retries": 2,
+    "batch_size": 3,
+    "timeout": 30,
+    "model_name": "gemini-1.5-flash"
+  }
+}

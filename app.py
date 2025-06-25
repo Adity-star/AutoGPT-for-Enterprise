@@ -45,17 +45,27 @@ st.markdown("""
 # Title and description
 st.title("🚀 Market Research Agent")
 st.markdown("""
-    This tool helps you analyze market trends and generate business ideas.
-    Click the button below to start the market research.
+This tool helps you either **generate new business ideas** or **validate your existing startup idea** by analyzing demand, competition, and viability.
 """)
 
+
+mode = st.radio("choose what you want to do:", ["🔍 Generate New Idea", "✅ Validate My Idea"])
+
+user_idea= None
+if mode == "✅ Validate My Idea" and not user_idea:
+    st.warning("Please enter your idea below before running the analysis.")
+    user_idea = st.text_area("Enter your business idea", height=100, placeholder="e.g. AI-powered personal finance assistant")
+
+payload = {}
+if user_idea:
+    payload["user_idea"] = user_idea
 # Add a run button
 if st.button("Run Market Research", type="primary"):
     with st.spinner("Running market research... This may take a few minutes."):
         try:
             response = requests.post(
                 "http://localhost:8000/api/research",
-                json={},  # Empty payload uses default config
+                json=payload,  # Empty payload uses default config
                 timeout=300  # 5 minute timeout
             )
             

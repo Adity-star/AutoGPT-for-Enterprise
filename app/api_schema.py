@@ -1,4 +1,4 @@
-from modules.market_researcher import market_research  
+from modules.market_researcher import nodes  
 class ResearchInput:
     def __init__(self, keywords, industry):
         self.keywords = keywords
@@ -12,6 +12,6 @@ def run_market_agent(input: ResearchInput):
     }
 
     # Pass this state to your agent graph
-    result = market_research.run_market_research_agent(initial_state)
+    result = nodes.run_market_research_agent(initial_state)
     return result
 

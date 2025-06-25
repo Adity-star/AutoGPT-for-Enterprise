@@ -5,29 +5,20 @@ import asyncio
 import logging
 import re
 from aiohttp import ClientTimeout
-from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Callable, Coroutine, Union
 from functools import wraps
 from datetime import datetime, timedelta
 import sys
 
 import google.generativeai as genai
-from dotenv import load_dotenv
 from langgraph.graph import StateGraph
+from .state import AnalysisConfig, MarketResearchState
 
-from services.rebbit_service import RedditService
 from config.prompts import get_idea_generation_prompt
-from services.support_tools import analyze_ideas_with_trends, search_competitors
+from .services.support_tools import analyze_ideas_with_trends, search_competitors
+from .services.rebbit_service import RedditService
+from settings import Settings
 
-# Load environment variables
-load_dotenv()
-
-# Validate API key
-api_key = os.getenv("GOOGLE_API_KEY")
-if not api_key:
-    raise ValueError("GOOGLE_API_KEY environment variable is required")
-
-genai.configure(api_key=api_key)
 
 # Configure structured logging
 os.makedirs("logs", exist_ok=True)
@@ -45,58 +36,6 @@ logger.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
-@dataclass
-class AnalysisConfig:
-    """Configuration for the market research analysis"""
-    max_retries: int = 3
-    batch_size: int = 5
-    timeout: int = 30
-    enable_caching: bool = True
-    cache_ttl_minutes: int = 60
-    model_name: str = "gemini-1.5-flash"
-
-    def validate(self):
-        """Validate configuration parameters"""
-        if self.max_retries < 0:
-            raise ValueError(f"max_retries must be non-negative: {self.max_retries}")
-        if self.batch_size < 1:
-            raise ValueError(f"batch_size must be at least 1: {self.batch_size}")
-        if self.timeout < 1:
-            raise ValueError(f"timeout must be at least 1 second: {self.timeout}")
-        if self.cache_ttl_minutes < 1:
-            raise ValueError(f"cache_ttl_minutes must be at least 1 minute: {self.cache_ttl_minutes}")
-
-# Configure structured logging
-os.makedirs("logs", exist_ok=True)
-log_file = os.path.join('logs', 'market_research.log')
-file_handler = logging.FileHandler(log_file)
-file_handler.setLevel(logging.INFO)
-file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s'))
-
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)
-console_handler.setFormatter(logging.Formatter('%(message)s'))
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
-
-
-@dataclass
-class MarketResearchState:
-    """State management for the market research workflow"""
-    trending_posts: List[Dict[str, Any]] = field(default_factory=list)
-    idea_list: List[Dict[str, Any]] = field(default_factory=list)
-    parallel_analysis: Dict[str, List[Dict[str, Any]]] = field(
-        default_factory=lambda: {"demand": [], "competition": [], "economics": []}
-    )
-    scored_ideas: List[Dict[str, Any]] = field(default_factory=list)
-    validated_ideas: List[Dict[str, Any]] = field(default_factory=list)
-    best_business_idea: Dict[str, Any] = field(default_factory=dict)
-    config: AnalysisConfig = field(default_factory=AnalysisConfig)
-    errors: List[str] = field(default_factory=list)
-    start_time: datetime = field(default_factory=datetime.now)
 
 
 class CacheEntry:
@@ -183,7 +122,7 @@ class AsyncResilientAnalyzer:
         self._session_timeout = ClientTimeout(total=config.timeout)
     
     def get_model(self) -> genai.GenerativeModel:
-        """Get or create the Gemini model"""
+        """Get or create the model"""
         if self._model is None:
             try:
                 self._model = genai.GenerativeModel(self.config.model_name)
@@ -299,10 +238,21 @@ async def get_trending_industries(state: MarketResearchState) -> MarketResearchS
     """Get trending posts from Reddit or use fallback data"""
     try:
         logger.info("Fetching trending industries...")
-        
-        # Try to use RebbitService if available
+
+        if not all(Settings.REDDIT_CLIENT_ID,Settings.REDDIT_CLIENT_SECRET, Settings.REDDIT_USER_AGENT):
+            error_msg = "Reddit API Credentials are missing or incomplete."
+            logger.error(error_msg)
+            state.errors.append(error_msg)
+            return state
+
+        # Try to use RedditService if available
         try:
-            reddit = RedditService()
+            reddit = RedditService(
+                client_id=Settings.REDDIT_CLIENT_ID,
+                client_secret=Settings.REDDIT_CLIENT_SECRET,
+                user_agent=Settings.REDDIT_USER_AGENT
+            )
+            
             # Run Reddit API call in thread executor
             top_posts = await asyncio.get_event_loop().run_in_executor(
                 None, 
@@ -338,10 +288,15 @@ async def get_trending_industries(state: MarketResearchState) -> MarketResearchS
 
 
 async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
-    """Generate business ideas based on trending topics"""
+    """Generate or accept user-provided business ideas"""
     try:
-        logger.info("Generating business ideas...")
-        
+        logger.info("Processing idea generation...")
+
+        if getattr(state, "user_idea", None):
+            logger.info("User idea detected, Skipping generation.")
+            state.idea_list = [{"idea": state.user_idea}]
+            return state
+
         if not state.trending_posts:
             logger.warning("No trending posts available")
             state.idea_list = []
@@ -366,7 +321,7 @@ async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
         for idea in ideas:
             if isinstance(idea, dict) and idea.get('idea') and len(idea['idea']) > 10:
                 validated_ideas.append(idea)
-            if len(validated_ideas) >= 8:  # Limit to 8 ideas for better processing
+            if len(validated_ideas) >= 5: 
                 break
         
         state.idea_list = validated_ideas
@@ -572,11 +527,11 @@ def extract_numerical_score(text: str, default: int = 5) -> int:
     
     # Look for various score patterns
     patterns = [
-        r'(\d{1,2})\s*(?:/\s*10|out\s+of\s+10)',  # "8/10" or "8 out of 10"
-        r'rating:\s*(\d{1,2})',                     # "rating: 8"
-        r'score:\s*(\d{1,2})',                      # "score: 8"
-        r'(\d{1,2})/10',                            # "8/10"
-        r'\b(\d{1,2})\s*(?:points?|pts?)\b'         # "8 points"
+        r'(\d{1,2})\s*(?:/\s*10|out\s+of\s+10)',  
+        r'rating:\s*(\d{1,2})',                     
+        r'score:\s*(\d{1,2})',                     
+        r'(\d{1,2})/10',                           
+        r'\b(\d{1,2})\s*(?:points?|pts?)\b'         
     ]
     
     for pattern in patterns:
@@ -584,7 +539,7 @@ def extract_numerical_score(text: str, default: int = 5) -> int:
         if match:
             try:
                 score = int(match.group(1))
-                return max(1, min(score, 10))  # Clamp between 1-10
+                return max(1, min(score, 10))  
             except (ValueError, IndexError):
                 continue
     
@@ -798,87 +753,4 @@ async def store_results_to_file(state: MarketResearchState) -> MarketResearchSta
         return state
 
 
-# Create the workflow graph
-def create_market_research_graph() -> StateGraph:
-    """Create and configure the market research workflow graph"""
-    
-    graph = StateGraph(MarketResearchState)
-    
-    # Add nodes
-    graph.add_node("get_trending_industries", get_trending_industries)
-    graph.add_node("generate_idea_list", generate_idea_list)
-    graph.add_node("parallel_analysis_2", parallel_analysis)
-    graph.add_node("combine_and_score", combine_and_score)
-    graph.add_node("validate_and_select", validate_and_select)
-    graph.add_node("store_results_to_file", store_results_to_file)
-    
-    # Define workflow
-    graph.set_entry_point("get_trending_industries")
-    graph.add_edge("get_trending_industries", "generate_idea_list")
-    graph.add_edge("generate_idea_list", "parallel_analysis_2")
-    graph.add_edge("parallel_analysis_2", "combine_and_score")
-    graph.add_edge("combine_and_score", "validate_and_select")
-    graph.add_edge("validate_and_select", "store_results_to_file")
-    
-    return graph
 
-
-async def run_market_research_agent(config: Optional[AnalysisConfig] = None) -> Dict[str, Any]:
-    """Main function to run the market research agent"""
-    
-    if config is None:
-        config = AnalysisConfig(
-            max_retries=2,
-            batch_size=3,
-            timeout=30,
-            enable_caching=True,
-            cache_ttl_minutes=60
-        )
-    
-    # Update global analyzer config
-    global analyzer
-    analyzer.config = config
-    
-    # Create initial state
-    initial_state = MarketResearchState(
-        config=config,
-        start_time=datetime.now()
-    )
-    
-    # Create and compile graph
-    graph = create_market_research_graph()
-    market_research_agent = graph.compile()
-    
-    try:
-        logger.info("Starting Market Research...")
-        result = await market_research_agent.ainvoke(initial_state)
-        
-        # Only return the best business idea with its complete analysis
-        best_idea = result.best_business_idea
-        if best_idea:
-            return {
-                "best_business_idea": {
-                    "idea": best_idea.get("idea", ""),
-                    "trend_score": best_idea.get("trend_score", 0),
-                    "demand_analysis": best_idea.get("demand_analysis", ""),
-                    "competition_analysis": best_idea.get("competition_analysis", ""),
-                    "unit_economics": best_idea.get("unit_economics", ""),
-                    "demand_score": best_idea.get("demand_score", 0),
-                    "competition_score": best_idea.get("competition_score", 0),
-                    "economics_score": best_idea.get("economics_score", 0),
-                    "final_score": best_idea.get("final_score", 0),
-                    "scoring_breakdown": best_idea.get("scoring_breakdown", ""),
-                    "validation_score": best_idea.get("validation_score", 0),
-                    "recommendation": best_idea.get("recommendation", ""),
-                    "validation_summary": best_idea.get("validation_summary", "")
-                }
-            }
-        else:
-            return {"best_business_idea": None}
-            
-    except Exception as e:
-        logger.error(f"Agent execution failed: {e}")
-        return {"error": str(e)}
-
-if __name__ == "__main__":
-    asyncio.run(run_market_research_agent())
