@@ -14,7 +14,7 @@ import asyncio
 from .state import AnalysisConfig
 from typing import Dict, Any, Optional
 from utils.logger import logger
-from .nodes import AsyncResilientAnalyzer
+from autogpt_core.modules.market_researcher.nodes import AsyncResilientAnalyzer
 
 
 analyzer = AsyncResilientAnalyzer(AnalysisConfig())
