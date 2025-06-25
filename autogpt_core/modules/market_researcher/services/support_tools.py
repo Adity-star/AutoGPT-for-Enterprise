@@ -40,17 +40,6 @@ def analyze_ideas_with_trends(state: MarketResearchState) -> MarketResearchState
     }
 
 
-# def export_graph_to_mermaid(graph: StateGraph) -> str:
-#     lines = ["graph TD"]
-
-#     # graph.edges is likely a set of (source, destination) tuples
-#     for edge in graph.edges:
-#         if isinstance(edge, tuple) and len(edge) == 2:
-#             source, destination = edge
-#             lines.append(f"    {source} --> {destination}")
-
-#     return "\n".join(lines)
-
 
 def search_competitors(idea, max_results=5):
     try:
