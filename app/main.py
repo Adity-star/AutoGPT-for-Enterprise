@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -11,6 +13,8 @@ from modules.market_researcher.state import MarketResearchState, AnalysisConfig
 from app.logging_config import setup_logging
 from app.error_handler import handle_exception, ValidationError, APIError
 from modules.market_researcher.nodes import parallel_analysis
+from dotenv import load_dotenv
+load_dotenv()
 
 # Configure logging with timestamped files
 logger = setup_logging("market_research_api")
@@ -68,9 +72,11 @@ async def run_market_research(request: MarketResearchRequest):
         # Run the agent
         final_state = await run_market_research_agent(state)
 
+        # Return only the best_business_idea in best_idea
+        best_idea = final_state.get("best_business_idea", {})
         return MarketResearchResponse(
             status="success",
-            best_idea=final_state
+            best_idea=best_idea
         )
 
     except Exception as e:
