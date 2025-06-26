@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 import json
 import time
@@ -18,6 +21,12 @@ from config.prompts import get_idea_generation_prompt
 from .services.support_tools import analyze_ideas_with_trends, search_competitors
 from .services.rebbit_service import RedditService
 from settings import Settings
+from groq import Groq
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import JsonOutputParser
+from dotenv import load_dotenv
+load_dotenv()
 
 
 # Configure structured logging
@@ -118,56 +127,47 @@ class AsyncResilientAnalyzer:
     
     def __init__(self, config: AnalysisConfig):
         self.config = config
-        self._model = None
-        self._session_timeout = ClientTimeout(total=config.timeout)
-    
-    def get_model(self) -> genai.GenerativeModel:
-        """Get or create the model"""
-        if self._model is None:
-            try:
-                self._model = genai.GenerativeModel(self.config.model_name)
-                logger.info(f"Model {self.config.model_name} initialized")
-            except Exception as e:
-                logger.error(f"Failed to initialize model: {e}")
-                raise
-        return self._model
-    
+        self._llm = None
+
+    def get_llm(self):
+        if self._llm is None:
+            self._llm = ChatGroq(
+                model_name=self.config.model_name,  # e.g., "llama-3.3-70b-versatile"
+                temperature=0.7,
+                api_key=getattr(self.config, "api_key", None)
+            )
+        return self._llm
+
     @async_retry(max_retries=3, retry_on_exceptions=(Exception,))
     async def generate_content(self, prompt: str) -> str:
-        """Generate content using Gemini API with caching"""
         if not prompt.strip():
             raise ValueError("Prompt cannot be empty")
-        
-        # Check cache first
         if self.config.enable_caching:
             cached_result = await prompt_cache.get(prompt)
             if cached_result:
                 logger.debug("Using cached result for prompt")
                 return cached_result
-        
-        # Generate new content
-        model = self.get_model()
+        # Set up the prompt and parser for ideas
+        parser = JsonOutputParser(pydantic_object={
+            "type": "object",
+            "properties": {
+                "ideas": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            }
+        })
+        chat_prompt = ChatPromptTemplate.from_messages([
+            ("system", "Extract business ideas into JSON: {\"ideas\": [\"idea1\", \"idea2\", ...]}"),
+            ("user", prompt)
+        ])
+        chain = chat_prompt | self.get_llm() | parser
         try:
-            # Run in thread executor since Gemini API is synchronous
-            loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                None, 
-                lambda: model.generate_content(prompt)
-            )
-            
-            if not response or not response.text:
-                raise ValueError("Empty response from model")
-            
-            # Cache the result
+            result = await chain.ainvoke({"input": prompt})
+            text = json.dumps(result)  # result is a dict
             if self.config.enable_caching:
-                await prompt_cache.set(
-                    prompt, 
-                    response.text, 
-                    self.config.cache_ttl_minutes
-                )
-            
-            return response.text.strip()
-            
+                await prompt_cache.set(prompt, text, self.config.cache_ttl_minutes)
+            return text
         except Exception as e:
             logger.error(f"Content generation failed: {e}")
             raise
@@ -239,16 +239,34 @@ async def get_trending_industries(state: MarketResearchState) -> MarketResearchS
     try:
         logger.info("Fetching trending industries...")
 
-        if not all(Settings.REDDIT_CLIENT_ID,Settings.REDDIT_CLIENT_SECRET, Settings.REDDIT_USER_AGENT):
-            error_msg = "Reddit API Credentials are missing or incomplete."
-            logger.error(error_msg)
-            state.errors.append(error_msg)
+        # Validate Reddit API keys
+        missing_reddit_keys = []
+        if not getattr(Settings, "REDDIT_CLIENT_ID", None):
+            missing_reddit_keys.append("REDDIT_CLIENT_ID")
+        if not getattr(Settings, "REDDIT_CLIENT_SECRET", None):
+            missing_reddit_keys.append("REDDIT_CLIENT_SECRET")
+        if not getattr(Settings, "REDDIT_USER_AGENT", None):
+            missing_reddit_keys.append("REDDIT_USER_AGENT")
+        if missing_reddit_keys:
+            logger.warning(f"Reddit credentials missing ({', '.join(missing_reddit_keys)}), using fallback trending topics.")
+            top_posts = [
+                {"title": "AI automation and workflow tools", "score": 95},
+                {"title": "Sustainable packaging solutions", "score": 88},
+                {"title": "Remote work productivity apps", "score": 85},
+                {"title": "Health and wellness tracking", "score": 82},
+                {"title": "Electric vehicle charging infrastructure", "score": 79},
+                {"title": "Digital financial literacy platforms", "score": 76},
+                {"title": "Local food delivery optimization", "score": 73},
+                {"title": "Mental health support applications", "score": 70}
+            ]
+            state.trending_posts = top_posts
+            logger.info(f"Retrieved {len(top_posts)} fallback trending posts")
+            state.errors.append(f"Missing Reddit API keys: {', '.join(missing_reddit_keys)}")
             return state
 
         # Try to use RedditService if available
         try:
             reddit = RedditService()
-            
             # Run Reddit API call in thread executor
             top_posts = await asyncio.get_event_loop().run_in_executor(
                 None, 
@@ -288,6 +306,15 @@ async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
     try:
         logger.info("Processing idea generation...")
 
+        # Validate Groq API key
+        api_key = getattr(analyzer.config, "api_key", None)
+        if not api_key:
+            error_msg = "Missing Groq API key. Cannot generate ideas."
+            logger.error(error_msg)
+            state.errors.append(error_msg)
+            state.idea_list = []
+            return state
+
         if getattr(state, "user_idea", None):
             logger.info("User idea detected, Skipping generation.")
             state.idea_list = [{"idea": state.user_idea}]
@@ -308,14 +335,21 @@ async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
         except NameError:
             prompt = get_idea_generation_prompt_fallback(topics_text)
         
-        # Generate ideas
+        # Generate ideas using Groq + LangChain
         response_text = await analyzer.generate_content(prompt)
-        ideas = safe_parse_ideas(response_text)
+        try:
+            ideas_data = json.loads(response_text)
+            ideas = ideas_data.get("ideas", [])
+        except Exception as e:
+            logger.error(f"Failed to parse ideas JSON: {e}")
+            ideas = []
         
         # Validate and limit ideas
         validated_ideas = []
         for idea in ideas:
-            if isinstance(idea, dict) and idea.get('idea') and len(idea['idea']) > 10:
+            if isinstance(idea, str) and len(idea) > 10:
+                validated_ideas.append({"idea": idea})
+            elif isinstance(idea, dict) and idea.get('idea') and len(idea['idea']) > 10:
                 validated_ideas.append(idea)
             if len(validated_ideas) >= 5: 
                 break
@@ -333,129 +367,105 @@ async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
 
 
 async def analyze_single_idea_demand(idea: Dict[str, Any]) -> Dict[str, Any]:
-    """Analyze market demand for a single idea"""
     try:
-        trend_score = idea.get('trend_score', 50)
-        idea_text = idea.get('idea', 'Unknown idea')
-        
+        # Validate Groq API key
+        api_key = getattr(analyzer.config, "api_key", None)
+        if not api_key:
+            logger.error("Missing Groq API key. Cannot analyze demand.")
+            return {**idea, "demand_analysis": "No demand analysis available (missing API key)", "demand_score": "NA", "analysis_type": "demand"}
         prompt = f"""
-        Analyze the market demand for this business idea: "{idea_text}"
-        
-        Current trend score: {trend_score}/100
-        
-        Provide:
-        1. Market demand rating (1-10 scale)
-        2. Target audience size
-        3. Market growth potential
-        4. Key demand drivers
-        
-        Keep analysis concise (2-3 sentences) and include a numerical rating.
+        Analyze the market demand for this business idea: \"{idea.get('idea', '')}\"
+        Return a JSON object with:
+        {{
+            \"demand_analysis\": "short summary",
+            \"demand_score\": number (1-10)
+        }}
         """
-        
-        analysis_text = await analyzer.generate_content(prompt)
-        
-        return {
-            **idea, 
-            "demand_analysis": analysis_text, 
-            "analysis_type": "demand"
-        }
-        
+        parser = JsonOutputParser(pydantic_object={
+            "type": "object",
+            "properties": {
+                "demand_analysis": {"type": "string"},
+                "demand_score": {"type": "number"}
+            }
+        })
+        chat_prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are a business analyst. Respond in JSON as specified."),
+            ("user", prompt)
+        ])
+        chain = chat_prompt | analyzer.get_llm() | parser
+        result = await chain.ainvoke({"input": prompt})
+        return {**idea, **result, "analysis_type": "demand"}
     except Exception as e:
-        logger.error(f"Demand analysis failed for '{idea.get('idea', 'unknown')}': {e}")
-        return {
-            **idea, 
-            "demand_analysis": f"Analysis unavailable: {str(e)[:100]}", 
-            "analysis_type": "demand"
-        }
+        logger.error(f"Demand analysis failed: {e}")
+        return {**idea, "demand_analysis": "No demand analysis available", "demand_score": "NA", "analysis_type": "demand"}
 
 
 async def analyze_single_idea_competition(idea: Dict[str, Any]) -> Dict[str, Any]:
-    """Analyze competition for a single idea"""
     try:
-        idea_text = idea.get('idea', 'Unknown idea')
-        
-        # Get competitors
-        try:
-            competitors = search_competitors(idea_text)[:3]
-        except NameError:
-            competitors = search_competitors_fallback(idea_text)[:3]
-        
-        competitors_summary = []
-        for comp in competitors:
-            if isinstance(comp, dict):
-                title = comp.get('title', str(comp))[:50]
-            else:
-                title = str(comp)[:50]
-            competitors_summary.append(title)
-        
-        competitors_text = ', '.join(competitors_summary)
-        
+        # Validate Groq API key
+        api_key = getattr(analyzer.config, "api_key", None)
+        if not api_key:
+            logger.error("Missing Groq API key. Cannot analyze competition.")
+            return {**idea, "competition_analysis": "No competition analysis available (missing API key)", "competition_score": "NA", "analysis_type": "competition"}
         prompt = f"""
-        Analyze the competitive landscape for: "{idea_text}"
-        
-        Known competitors: {competitors_text}
-        
-        Provide:
-        1. Competition intensity rating (1-10 scale, where 10 = very competitive)
-        2. Market saturation level
-        3. Differentiation opportunities
-        4. Competitive advantages needed
-        
-        Keep analysis concise (2-3 sentences) and include a numerical rating.
+        Analyze the competition for this business idea: \"{idea.get('idea', '')}\"
+        Return a JSON object with:
+        {{
+            \"competition_analysis\": "short summary",
+            \"competition_score\": number (1-10)
+        }}
         """
-        
-        analysis_text = await analyzer.generate_content(prompt)
-        
-        return {
-            **idea, 
-            "competition_analysis": analysis_text, 
-            "competitors_count": len(competitors), 
-            "analysis_type": "competition"
-        }
-        
+        parser = JsonOutputParser(pydantic_object={
+            "type": "object",
+            "properties": {
+                "competition_analysis": {"type": "string"},
+                "competition_score": {"type": "number"}
+            }
+        })
+        chat_prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are a business analyst. Respond in JSON as specified."),
+            ("user", prompt)
+        ])
+        chain = chat_prompt | analyzer.get_llm() | parser
+        result = await chain.ainvoke({"input": prompt})
+        return {**idea, **result, "analysis_type": "competition"}
     except Exception as e:
-        logger.error(f"Competition analysis failed for '{idea.get('idea', 'unknown')}': {e}")
-        return {
-            **idea, 
-            "competition_analysis": f"Analysis unavailable: {str(e)[:100]}", 
-            "competitors_count": 5,  # Default assumption
-            "analysis_type": "competition"
-        }
+        logger.error(f"Competition analysis failed: {e}")
+        return {**idea, "competition_analysis": "No competition analysis available", "competition_score": "NA", "analysis_type": "competition"}
 
 
 async def analyze_single_idea_economics(idea: Dict[str, Any]) -> Dict[str, Any]:
-    """Analyze unit economics for a single idea"""
     try:
-        idea_text = idea.get('idea', 'Unknown idea')
-        
+        # Validate Groq API key
+        api_key = getattr(analyzer.config, "api_key", None)
+        if not api_key:
+            logger.error("Missing Groq API key. Cannot analyze economics.")
+            return {**idea, "unit_economics": "No economics analysis available (missing API key)", "economics_score": "NA", "analysis_type": "economics"}
         prompt = f"""
-        Estimate unit economics for this business: "{idea_text}"
-        
-        Provide realistic estimates for:
-        1. Customer Acquisition Cost (CAC): $X
-        2. Average Revenue Per Customer (ARPC): $X/month or $X/year
-        3. Gross Margin: X%
-        4. Break-even timeline: X months
-        5. Economics viability rating: X/10
-        
-        Keep estimates realistic and provide brief justification (2-3 sentences).
+        Estimate the unit economics for this business idea: \"{idea.get('idea', '')}\"
+        Return a JSON object with:
+        {{
+            \"unit_economics\": "short summary",
+            \"economics_score\": number (1-10)
+        }}
         """
-        
-        economics_text = await analyzer.generate_content(prompt)
-        
-        return {
-            **idea, 
-            "unit_economics": economics_text, 
-            "analysis_type": "economics"
-        }
-        
+        parser = JsonOutputParser(pydantic_object={
+            "type": "object",
+            "properties": {
+                "unit_economics": {"type": "string"},
+                "economics_score": {"type": "number"}
+            }
+        })
+        chat_prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are a business analyst. Respond in JSON as specified."),
+            ("user", prompt)
+        ])
+        chain = chat_prompt | analyzer.get_llm() | parser
+        result = await chain.ainvoke({"input": prompt})
+        return {**idea, **result, "analysis_type": "economics"}
     except Exception as e:
-        logger.error(f"Economics analysis failed for '{idea.get('idea', 'unknown')}': {e}")
-        return {
-            **idea, 
-            "unit_economics": f"Analysis unavailable: {str(e)[:100]}", 
-            "analysis_type": "economics"
-        }
+        logger.error(f"Economics analysis failed: {e}")
+        return {**idea, "unit_economics": "No economics analysis available", "economics_score": "NA", "analysis_type": "economics"}
 
 
 async def parallel_analysis(state: MarketResearchState) -> MarketResearchState:
@@ -713,6 +723,17 @@ async def store_results_to_file(state: MarketResearchState) -> MarketResearchSta
         os.makedirs("data", exist_ok=True)
         
         # Prepare serializable state
+        if isinstance(state, dict):
+            config = state.get("config", {})
+        else:
+            config = getattr(state, "config", None)
+        def get_config_value(key):
+            if isinstance(config, dict):
+                return config.get(key)
+            elif config is not None:
+                return getattr(config, key, None)
+            return None
+        best_idea = state.best_business_idea or {}
         output_data = {
             "analysis_metadata": {
                 "timestamp": datetime.now().isoformat(),
@@ -720,13 +741,27 @@ async def store_results_to_file(state: MarketResearchState) -> MarketResearchSta
                 "total_ideas_processed": len(state.idea_list),
                 "total_errors": len(state.errors)
             },
-            "best_business_idea": state.best_business_idea,
+            "best_business_idea": {
+                "idea": best_idea.get("idea", ""),
+                "trend_score": best_idea.get("trend_score", 0),
+                "demand_analysis": best_idea.get("demand_analysis", ""),
+                "demand_score": best_idea.get("demand_score", ""),
+                "competition_analysis": best_idea.get("competition_analysis", ""),
+                "competition_score": best_idea.get("competition_score", ""),
+                "unit_economics": best_idea.get("unit_economics", ""),
+                "economics_score": best_idea.get("economics_score", ""),
+                "final_score": best_idea.get("final_score", 0),
+                "scoring_breakdown": best_idea.get("scoring_breakdown", ""),
+                "validation_score": best_idea.get("validation_score", 0),
+                "recommendation": best_idea.get("recommendation", ""),
+                "validation_summary": best_idea.get("validation_summary", "")
+            },
             "errors": state.errors,
             "config": {
-                "max_retries": state.config.max_retries,
-                "batch_size": state.config.batch_size,
-                "timeout": state.config.timeout,
-                "model_name": state.config.model_name
+                "max_retries": get_config_value("max_retries"),
+                "batch_size": get_config_value("batch_size"),
+                "timeout": get_config_value("timeout"),
+                "model_name": get_config_value("model_name")
             }
         }
         

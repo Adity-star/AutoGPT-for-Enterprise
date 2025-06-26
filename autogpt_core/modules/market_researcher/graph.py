@@ -76,18 +76,18 @@ async def run_market_research_agent(config: Optional[AnalysisConfig] = None) -> 
         result = await market_research_agent.ainvoke(initial_state)
         
         # Only return the best business idea with its complete analysis
-        best_idea = result.best_business_idea
+        best_idea = result.get("best_business_idea")
         if best_idea:
             return {
                 "best_business_idea": {
                     "idea": best_idea.get("idea", ""),
                     "trend_score": best_idea.get("trend_score", 0),
                     "demand_analysis": best_idea.get("demand_analysis", ""),
+                    "demand_score": best_idea.get("demand_score", ""),
                     "competition_analysis": best_idea.get("competition_analysis", ""),
+                    "competition_score": best_idea.get("competition_score", ""),
                     "unit_economics": best_idea.get("unit_economics", ""),
-                    "demand_score": best_idea.get("demand_score", 0),
-                    "competition_score": best_idea.get("competition_score", 0),
-                    "economics_score": best_idea.get("economics_score", 0),
+                    "economics_score": best_idea.get("economics_score", ""),
                     "final_score": best_idea.get("final_score", 0),
                     "scoring_breakdown": best_idea.get("scoring_breakdown", ""),
                     "validation_score": best_idea.get("validation_score", 0),

@@ -1,0 +1,33 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2025-06-26T20:27:54.520784",
+    "execution_time_seconds": 0.104145,
+    "total_ideas_processed": 0,
+    "total_errors": 2
+  },
+  "best_business_idea": {
+    "idea": "",
+    "trend_score": 0,
+    "demand_analysis": "",
+    "demand_score": "",
+    "competition_analysis": "",
+    "competition_score": "",
+    "unit_economics": "",
+    "economics_score": "",
+    "final_score": 0,
+    "scoring_breakdown": "",
+    "validation_score": 0,
+    "recommendation": "",
+    "validation_summary": ""
+  },
+  "errors": [
+    "Missing Reddit API keys: REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET, REDDIT_USER_AGENT",
+    "Missing Groq API key. Cannot generate ideas."
+  ],
+  "config": {
+    "max_retries": null,
+    "batch_size": null,
+    "timeout": null,
+    "model_name": null
+  }
+}

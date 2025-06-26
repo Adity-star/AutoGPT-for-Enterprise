@@ -13,7 +13,7 @@ class AnalysisConfig:
     timeout: int = 30
     enable_caching: bool = True
     cache_ttl_minutes: int = 60
-    model_name: str = "gemini-1.5-flash"
+    model_name: str = "mistral-saba-24b"
 
     def validate(self):
         """Validate configuration parameters"""
