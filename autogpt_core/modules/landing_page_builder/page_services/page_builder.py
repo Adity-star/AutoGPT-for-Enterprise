@@ -3,7 +3,7 @@
 import aiofiles
 import os
 from jinja2 import Environment, FileSystemLoader,select_autoescape
-from .page_services.landing_page import LandingPageContent
+from .landing_page import LandingPageContent
 
 
 # Set up Jinja2 environment
