@@ -3,6 +3,7 @@ import requests
 from requests.exceptions import RequestException
 import json
 import time
+from autogpt_core.utils.idea_memory import load_ideas_from_db
 
 # Configure the page
 st.set_page_config(
@@ -131,6 +132,29 @@ if st.button("Run Market Research", type="primary"):
                         file_name="market_research_analysis.json",
                         mime="application/json"
                     )
+                    
+                    # Display the latest validated idea from short-term memory
+                    st.markdown("---")
+                    st.markdown("### 🧠 Short-Term Memory: Last Validated Idea")
+                    latest_ideas = load_ideas_from_db(limit=1)
+                    if latest_ideas:
+                        idea = latest_ideas[0]
+                        st.markdown(f"**Idea:** {idea.get('idea', '')}")
+                        st.markdown(f"**Trend Score:** {idea.get('trend_score', '')}")
+                        st.markdown(f"**Demand Analysis:** {idea.get('demand_analysis', '')}")
+                        st.markdown(f"**Demand Score:** {idea.get('demand_score', '')}")
+                        st.markdown(f"**Competition Analysis:** {idea.get('competition_analysis', '')}")
+                        st.markdown(f"**Competition Score:** {idea.get('competition_score', '')}")
+                        st.markdown(f"**Unit Economics:** {idea.get('unit_economics', '')}")
+                        st.markdown(f"**Economics Score:** {idea.get('economics_score', '')}")
+                        st.markdown(f"**Final Score:** {idea.get('final_score', '')}")
+                        st.markdown(f"**Scoring Breakdown:** {idea.get('scoring_breakdown', '')}")
+                        st.markdown(f"**Validation Score:** {idea.get('validation_score', '')}")
+                        st.markdown(f"**Recommendation:** {idea.get('recommendation', '')}")
+                        st.markdown(f"**Validation Summary:** {idea.get('validation_summary', '')}")
+                        st.markdown(f"**Created At:** {idea.get('created_at', '')}")
+                    else:
+                        st.info("No validated idea in short-term memory yet.")
                 else:
                     st.error(f"Error: {result.get('error', 'Unknown error')}")
             else:
