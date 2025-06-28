@@ -17,7 +17,7 @@ import google.generativeai as genai
 from langgraph.graph import StateGraph
 from .state import AnalysisConfig, MarketResearchState
 
-from config.prompts import get_idea_generation_prompt
+from config.prompts.prompts import get_idea_generation_prompt
 from .services.support_tools import analyze_ideas_with_trends, search_competitors
 from .services.rebbit_service import RedditService
 from settings import Settings
@@ -27,24 +27,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from dotenv import load_dotenv
 from autogpt_core.utils.idea_memory import init_db, save_idea_to_db
-
-
-# Configure structured logging
-os.makedirs("logs", exist_ok=True)
-log_file = os.path.join('logs', 'market_research.log')
-file_handler = logging.FileHandler(log_file)
-file_handler.setLevel(logging.INFO)
-file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s'))
-
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)
-console_handler.setFormatter(logging.Formatter('%(message)s'))
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
-
+from utils.logger import logger
 
 
 class CacheEntry:
