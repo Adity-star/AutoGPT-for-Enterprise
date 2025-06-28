@@ -26,7 +26,7 @@ from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from dotenv import load_dotenv
-load_dotenv()
+from autogpt_core.utils.idea_memory import init_db, save_idea_to_db
 
 
 # Configure structured logging
@@ -700,9 +700,10 @@ def validate_and_select(state: MarketResearchState) -> MarketResearchState:
         
         state.validated_ideas = validated_ideas
         state.best_business_idea = best_idea
-        
         logger.info(f"Validated {len(validated_ideas)} ideas, selected best: {best_idea.get('idea', 'None')[:50]}...")
-        
+        # Save best idea to short-term memory DB
+        if best_idea and best_idea.get("idea"):
+            save_idea_to_db(best_idea)
         return state
         
     except Exception as e:
@@ -774,6 +775,10 @@ async def store_results_to_file(state: MarketResearchState) -> MarketResearchSta
         
         # Clean up expired cache entries
         await prompt_cache.clear_expired()
+        
+        # Save best idea to short-term memory DB (redundant but safe)
+        if best_idea and best_idea.get("idea"):
+            save_idea_to_db(best_idea)
         
         return state
         
