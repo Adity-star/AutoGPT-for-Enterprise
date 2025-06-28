@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{{ headline }}</title>
+    <meta name="description" content="{{ subheadline }}">
+    <meta property="og:image" content="{{ image_url }}">
+    <style>
+        body {
+            font-family: 'Helvetica Neue', sans-serif;
+            padding: 40px;
+            background-color: #f8f8f8;
+            color: #2c3e50;
+        }
+        h1 { font-size: 2.5em; }
+        h2 { font-weight: 400; color: #555; }
+        ul { padding-left: 20px; line-height: 1.8; }
+        img { max-width: 100%; height: auto; margin-top: 20px; }
+        .cta {
+            margin-top: 30px;
+            background: #3498db;
+            color: white;
+            padding: 12px 24px;
+            display: inline-block;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ headline }}</h1>
+    <h2>{{ subheadline }}</h2>
+    <ul>
+        {% for feature in features %}
+            <li>{{ feature }}</li>
+        {% endfor %}
+    </ul>
+    <img src="{{ image_url }}" alt="Landing Page Image" />
+    <div class="cta">{{ call_to_action }}</div>
+</body>
+</html>

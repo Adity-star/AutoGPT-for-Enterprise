@@ -32,7 +32,9 @@ dependencies = [
     "plotly>=5.18.0",
     "google-search-results>=2.4.2",
     "pytrends>=4.9.2",
-    "beautifulsoup4>=4.12.2"
+    "beautifulsoup4>=4.12.2",
+    "langchain",
+    "aiofiles"
 
 ]
 

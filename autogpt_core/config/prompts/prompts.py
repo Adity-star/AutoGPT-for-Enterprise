@@ -1,4 +1,5 @@
-INSIGHT_PROMPT = f"""
+def get_idea_generation_prompt(posts):
+    return f"""
 You are a business advisor specializing in identifying high-potential, revenue-generating business ideas from user discussions. 
 Based on the following Reddit post titles and contents, generate up to 5 innovative business ideas that have strong commercial viability.
 
@@ -31,5 +32,16 @@ Respond ONLY in strict JSON format as follows:
 
 Posts:
 {posts}
-"""
+""" 
 
+content_generation_prompt = """
+You are a professional copywriter. Write a high-converting landing page for the following business idea.
+
+Idea: {idea}
+Recommendation: {recommendation}
+Demand: {demand_analysis}
+Competition: {competition_analysis}
+Unit Economics: {unit_economics}
+
+Return the response as JSON with this structure:
+{format_instructions}"""
