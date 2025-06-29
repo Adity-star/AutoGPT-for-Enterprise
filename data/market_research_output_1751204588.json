@@ -1,0 +1,30 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2025-06-29T19:13:08.473245",
+    "execution_time_seconds": 11.496513,
+    "total_ideas_processed": 5,
+    "total_errors": 0
+  },
+  "best_business_idea": {
+    "idea": "Revenue Diversification Platform",
+    "trend_score": 0,
+    "demand_analysis": "The demand for revenue diversification platforms is increasing as businesses seek to reduce their dependence on a single revenue stream and mitigate financial risks. The COVID-19 pandemic has accelerated this trend, highlighting the importance of diversified revenue streams for business resilience. According to a recent survey, 75% of businesses consider revenue diversification a top priority, and the market is expected to grow significantly in the next 5 years.",
+    "demand_score": 6,
+    "competition_analysis": "The revenue diversification platform market has moderate competition, with a mix of established players and emerging startups. Key competitors include companies that offer revenue management, pricing optimization, and digital transformation solutions. While there isn't a single platform that exactly matches the 'revenue diversification' description, there are several players that offer related services, such as revenue optimization, yield management, and growth strategies. The competition is expected to increase as more businesses recognize the importance of diversifying their revenue streams.",
+    "competition_score": 6,
+    "unit_economics": "The platform generates revenue through a 10-20% commission on diversified revenue streams, with an average revenue per user (ARPU) of $100-$200 per month. Customer acquisition costs (CAC) are estimated at $500-$1000, with a customer lifetime value (CLV) of $2,000-$5,000, resulting in a payback period of 3-6 months.",
+    "economics_score": 5,
+    "final_score": 54.0,
+    "scoring_breakdown": "Demand: 6/10, Competition: 6/10, Economics: 5/10",
+    "validation_score": 6.0,
+    "recommendation": "❌ Not Recommended",
+    "validation_summary": "Validation Score: 6.0/10 - ❌ Not Recommended"
+  },
+  "errors": [],
+  "config": {
+    "max_retries": 2,
+    "batch_size": 3,
+    "timeout": 30,
+    "model_name": "meta-llama/llama-4-scout-17b-16e-instruct"
+  }
+}
