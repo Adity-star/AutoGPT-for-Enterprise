@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 from requests.exceptions import RequestException
 import json
-import time
 from autogpt_core.utils.idea_memory import load_ideas_from_db
 
 # Configure the page
@@ -49,91 +48,80 @@ st.markdown("""
 This tool helps you either **generate new business ideas** or **validate your existing startup idea** by analyzing demand, competition, and viability.
 """)
 
+mode = st.radio("Choose what you want to do:", ["🔍 Generate New Idea", "✅ Validate My Idea"])
 
-mode = st.radio("choose what you want to do:", ["🔍 Generate New Idea", "✅ Validate My Idea"])
-
-user_idea= None
-if mode == "✅ Validate My Idea" and not user_idea:
-    st.warning("Please enter your idea below before running the analysis.")
+user_idea = None
+if mode == "✅ Validate My Idea":
     user_idea = st.text_area("Enter your business idea", height=100, placeholder="e.g. AI-powered personal finance assistant")
+    if not user_idea:
+        st.warning("Please enter your idea below before running the analysis.")
 
 payload = {}
 if user_idea:
     payload["user_idea"] = user_idea
-# Add a run button
+
 if st.button("Run Market Research", type="primary"):
     with st.spinner("Running market research... This may take a few minutes."):
         try:
             response = requests.post(
                 "http://localhost:8000/api/research",
-                json=payload,  # Empty payload uses default config
+                json=payload,  # Empty payload triggers new idea generation
                 timeout=300  # 5 minute timeout
             )
-            
             if response.status_code == 200:
                 result = response.json()
-                
+
                 if result["status"] == "success":
                     st.success("✅ Market research completed!")
-                    
-                    # Get the best idea data
-                    best_idea = result.get('best_business_idea', {})
-                    
-                    # Display the best idea title
+
+                    # Updated key here: 'best_idea' instead of 'best_business_idea'
+                    best_idea = result.get('best_idea', {})
+
                     st.markdown("### 🏆 Best Business Idea")
                     st.markdown(f"**{best_idea.get('idea', 'No idea generated')}**")
-                    
-                    # Create columns for scores
+
                     col1, col2, col3 = st.columns(3)
-                    
                     with col1:
                         st.markdown("#### 📊 Final Score")
                         st.markdown(f"**{best_idea.get('final_score', 'N/A')}/100**")
-                    
                     with col2:
                         st.markdown("#### ✅ Validation Score")
                         st.markdown(f"**{best_idea.get('validation_score', 'N/A')}/10**")
-                    
                     with col3:
                         st.markdown("#### 💡 Recommendation")
                         st.markdown(f"**{best_idea.get('recommendation', 'N/A')}**")
-                    
-                    # Display detailed analysis
+
                     st.markdown("### 📈 Detailed Analysis")
-                    
-                    # Demand Analysis
+
                     with st.expander("📊 Demand Analysis", expanded=True):
                         st.markdown(f"""
                         <div class='analysis-box'>
                             {best_idea.get('demand_analysis', 'No demand analysis available')}
                         </div>
                         """, unsafe_allow_html=True)
-                    
-                    # Competition Analysis
+
                     with st.expander("🎯 Competition Analysis", expanded=True):
                         st.markdown(f"""
                         <div class='analysis-box'>
                             {best_idea.get('competition_analysis', 'No competition analysis available')}
                         </div>
                         """, unsafe_allow_html=True)
-                    
-                    # Economics Analysis
+
                     with st.expander("💰 Economics Analysis", expanded=True):
                         st.markdown(f"""
                         <div class='analysis-box'>
                             {best_idea.get('unit_economics', 'No economics analysis available')}
                         </div>
                         """, unsafe_allow_html=True)
-                    
-                    # Add download button for results
+
                     st.download_button(
                         label="📥 Download Full Analysis",
                         data=json.dumps(best_idea, indent=2),
                         file_name="market_research_analysis.json",
                         mime="application/json"
                     )
-                    
-                    # Display the latest validated idea from short-term memory
+
+                    # Show latest validated idea from short-term memory DB
                     st.markdown("---")
                     st.markdown("### 🧠 Short-Term Memory: Last Validated Idea")
                     latest_ideas = load_ideas_from_db(limit=1)
@@ -163,6 +151,6 @@ if st.button("Run Market Research", type="primary"):
             st.error(f"Network error: {e}")
             st.info("Make sure the backend server is running on http://localhost:8000")
 
-# Add footer
+# Footer
 st.markdown("---")
 st.markdown("Made with ❤️ by Aditya Ak")

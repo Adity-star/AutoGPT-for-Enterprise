@@ -38,13 +38,13 @@ logger.error("Error message here")
 #     print(f"   URL: {post['permalink']}")
 #     print("-" * 80)
 
-from autogpt_core.modules.market_researcher.graph import run_market_research_agent
+from autogpt_core.modules.market_researcher.graph import run_market_research_agent,get_or_generate_market_research_idea
 
 
 async def main():
     """Main entry point for the market research agent"""
     try:
-        results = await run_market_research_agent()
+        results = await get_or_generate_market_research_idea()
         print("Market Research Results:")
         for key, value in results.items():
             print(f"{key}: {value}")

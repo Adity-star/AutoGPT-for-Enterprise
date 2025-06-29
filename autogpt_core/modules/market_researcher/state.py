@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from utils.logger import logging
 from typing import List, Dict, Any, Optional
+from pydantic import BaseModel
 
 logging.info("Loading market research analysis configuration")
 
@@ -13,7 +14,7 @@ class AnalysisConfig:
     timeout: int = 30
     enable_caching: bool = True
     cache_ttl_minutes: int = 60
-    model_name: str = "mistral-saba-24b"
+    model_name: str = "meta-llama/llama-4-scout-17b-16e-instruct"
     api_key: Optional[str] = None
 
     def validate(self):
@@ -42,3 +43,7 @@ class MarketResearchState:
     errors: List[str] = field(default_factory=list)
     start_time: datetime = field(default_factory=datetime.now)
     user_idea: Optional[str] = None
+
+
+class IdeaResponse(BaseModel):
+    ideas: List[str]

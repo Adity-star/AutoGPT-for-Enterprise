@@ -13,6 +13,8 @@ from autogpt_core.modules.market_researcher.state import AnalysisConfig, MarketR
 from typing import Dict, Any, Optional
 from utils.logger import logger
 from autogpt_core.modules.market_researcher.nodes import AsyncResilientAnalyzer
+from utils.idea_memory import load_ideas_from_db, save_idea_to_db, init_db
+from datetime import datetime, timedelta
 
 
 analyzer = AsyncResilientAnalyzer(AnalysisConfig())
@@ -41,7 +43,18 @@ def create_market_research_graph() -> StateGraph:
     
     return graph
 
-
+def get_recent_idea(hours=24) -> Optional[Dict[str, Any]]:
+    """Load idea from DB if created within last `hours`"""
+    ideas = load_ideas_from_db(limit=1)
+    if not ideas:
+        return None
+    idea = ideas[0]
+    created_at_str = idea.get("created_at")
+    if created_at_str:
+        created_at = datetime.fromisoformat(created_at_str)
+        if datetime.utcnow() - created_at < timedelta(hours=hours):
+            return idea
+    return None
 
 async def run_market_research_agent(config: Optional[AnalysisConfig] = None) -> Dict[str, Any]:
     """Main function to run the market research agent"""
@@ -68,6 +81,11 @@ async def run_market_research_agent(config: Optional[AnalysisConfig] = None) -> 
     # Create and compile graph
     graph = create_market_research_graph()
     market_research_agent = graph.compile()
+
+    # Initialize DB before saving to ensure tables exist
+    from utils.idea_memory import init_db  # Replace with your actual module
+    init_db()
+
     
     try:
         logger.info("Starting Market Research...")
@@ -99,6 +117,61 @@ async def run_market_research_agent(config: Optional[AnalysisConfig] = None) -> 
     except Exception as e:
         logger.error(f"Agent execution failed: {e}")
         return {"error": str(e)}
+    
+async def get_or_generate_market_research_idea(state: MarketResearchState, hours=24) -> Dict[str, Any]:
+    init_db()
+
+    if state.user_idea:
+        # Skip generation — run direct validation pipeline
+        logger.info("User provided idea. Running direct analysis and validation...")
+
+        graph = StateGraph(MarketResearchState)
+        graph.add_node("parallel_analysis", parallel_analysis)
+        graph.add_node("validate_and_select", validate_and_select)
+        graph.add_node("store_results_to_file", store_results_to_file)
+
+        graph.set_entry_point("parallel_analysis")
+        graph.add_edge("parallel_analysis", "validate_and_select")
+        graph.add_edge("validate_and_select", "store_results_to_file")
+
+        compiled_graph = graph.compile()
+
+        state.idea_list = [{"idea": state.user_idea}]
+        state.start_time = datetime.utcnow()
+
+        final_state = await compiled_graph.ainvoke(state)
+        return {
+            "best_business_idea": final_state.get("best_business_idea",{})
+        }
+
+    # No user idea — check if recent idea exists in DB
+    ideas = load_ideas_from_db(limit=1)
+    if ideas:
+        idea = ideas[0]
+        created_at_str = idea.get("created_at")
+        if created_at_str:
+            created_at = datetime.fromisoformat(created_at_str)
+            if datetime.utcnow() - created_at < timedelta(hours=hours):
+                logger.info("Using cached idea from DB (within last 24 hours).")
+                return {
+                    "best_business_idea": idea
+                }
+
+    # Run full market research agent
+    logger.info("No recent idea found. Running full market research agent...")
+    result = await run_market_research_agent(state.config)
+
+    if result and "best_business_idea" in result:
+        best_idea = result["best_business_idea"]
+        best_idea["created_at"] = datetime.utcnow().isoformat()
+        save_idea_to_db(best_idea)
+        return result
+
+    return {"best_business_idea": None}
+    
+
+    
 
 if __name__ == "__main__":
-    asyncio.run(run_market_research_agent())
+    idea = asyncio.run(get_or_generate_market_research_idea())
+    print("Business Idea:", idea)

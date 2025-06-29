@@ -108,6 +108,21 @@ def save_idea_to_db(idea: dict):
     c = conn.cursor()
     # Delete all previous ideas to keep only one
     c.execute("DELETE FROM ideas")
+     # Make sure table exists (you can also do this once at startup)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS ideas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            idea TEXT NOT NULL,
+            final_score REAL,
+            demand_analysis TEXT,
+            demand_score INTEGER,
+            competition_analysis TEXT,
+            competition_score INTEGER,
+            unit_economics TEXT,
+            economics_score INTEGER,
+            analysis_type TEXT
+        )
+    """)
     c.execute("""
         INSERT INTO ideas (
             idea, trend_score, demand_analysis, demand_score,

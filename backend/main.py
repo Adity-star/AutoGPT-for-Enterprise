@@ -8,7 +8,7 @@ import uvicorn
 import asyncio
 
 from utils.logger import logging
-from modules.market_researcher.graph import run_market_research_agent
+from modules.market_researcher.graph import get_or_generate_market_research_idea
 from modules.market_researcher.state import MarketResearchState, AnalysisConfig
 from app.logging_config import setup_logging
 from app.error_handler import handle_exception, ValidationError, APIError
@@ -69,11 +69,11 @@ async def run_market_research(request: MarketResearchRequest):
         state.user_idea = request.user_idea
         state.config = config
 
-        # Run the agent
-        final_state = await run_market_research_agent(state)
+        # Call caching wrapper with state
+        result = await get_or_generate_market_research_idea(state)
 
-        # Return only the best_business_idea in best_idea
-        best_idea = final_state.get("best_business_idea", {})
+        best_idea = result.get("best_business_idea", {})
+
         return MarketResearchResponse(
             status="success",
             best_idea=best_idea
@@ -92,6 +92,7 @@ async def analyze_single_idea(request: MarketResearchRequest):
     try:
         if not request.user_idea:
             raise ValidationError("user_idea is required for single idea analysis", {})
+
         config = AnalysisConfig(
             max_retries=request.max_retries,
             batch_size=request.batch_size,
@@ -99,22 +100,28 @@ async def analyze_single_idea(request: MarketResearchRequest):
             enable_caching=request.enable_caching,
             cache_ttl_minutes=request.cache_ttl_minutes
         )
+
+        # Inject user idea and config into state
         state = MarketResearchState(
-            idea_list=[{"idea": request.user_idea}],
+            user_idea=request.user_idea,
             config=config
         )
-        # Run only the parallel analysis node
-        analyzed_state = await parallel_analysis(state)
+
+        # This now handles analysis + validation (skipping generation)
+        result = await get_or_generate_market_research_idea(state)
+
         return MarketResearchResponse(
             status="success",
-            best_idea=analyzed_state.parallel_analysis
+            best_idea=result.get("best_business_idea", {})
         )
+
     except Exception as e:
         error_details = handle_exception(e)
         return MarketResearchResponse(
             status="error",
             error=error_details
         )
+
 
 
 @app.get("/api/health")

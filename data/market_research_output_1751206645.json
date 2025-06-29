@@ -1,0 +1,30 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2025-06-29T19:47:25.107801",
+    "execution_time_seconds": 19805.488267,
+    "total_ideas_processed": 1,
+    "total_errors": 0
+  },
+  "best_business_idea": {
+    "idea": "ai powered personal finance assistant\n",
+    "trend_score": 0,
+    "demand_analysis": "",
+    "demand_score": "",
+    "competition_analysis": "",
+    "competition_score": "",
+    "unit_economics": "",
+    "economics_score": "",
+    "final_score": 0,
+    "scoring_breakdown": "",
+    "validation_score": 7.0,
+    "recommendation": "🟡 Recommended with Caution",
+    "validation_summary": "Validation Score: 7.0/10 - 🟡 Recommended with Caution"
+  },
+  "errors": [],
+  "config": {
+    "max_retries": 2,
+    "batch_size": 3,
+    "timeout": 30,
+    "model_name": "meta-llama/llama-4-scout-17b-16e-instruct"
+  }
+}
