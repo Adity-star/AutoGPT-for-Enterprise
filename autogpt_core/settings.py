@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: str
     SERPAPI_API_KEY: str
 
+    GROQ_API_KEY: str
+
     def __init__(self, **kwargs):
         logging.info("Loading application settings from environment variables")
         super().__init__(**kwargs)  # Proper way to call parent class constructor
