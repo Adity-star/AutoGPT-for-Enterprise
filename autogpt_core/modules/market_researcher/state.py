@@ -14,6 +14,7 @@ class AnalysisConfig:
     enable_caching: bool = True
     cache_ttl_minutes: int = 60
     model_name: str = "mistral-saba-24b"
+    api_key: Optional[str] = None
 
     def validate(self):
         """Validate configuration parameters"""

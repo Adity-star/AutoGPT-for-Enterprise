@@ -1,17 +1,15 @@
-from .nodes import (
+from autogpt_core.modules.market_researcher.nodes import (
     get_trending_industries,
     generate_idea_list,
     parallel_analysis,
     combine_and_score,
     validate_and_select,
     store_results_to_file,
-
 )
 from datetime import datetime
-from .state import MarketResearchState
 from langgraph.graph import StateGraph
 import asyncio
-from .state import AnalysisConfig
+from autogpt_core.modules.market_researcher.state import AnalysisConfig, MarketResearchState
 from typing import Dict, Any, Optional
 from utils.logger import logger
 from autogpt_core.modules.market_researcher.nodes import AsyncResilientAnalyzer
