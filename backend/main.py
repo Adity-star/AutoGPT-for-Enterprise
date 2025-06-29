@@ -10,8 +10,8 @@ import asyncio
 from utils.logger import logging
 from modules.market_researcher.graph import get_or_generate_market_research_idea
 from modules.market_researcher.state import MarketResearchState, AnalysisConfig
-from app.logging_config import setup_logging
-from app.error_handler import handle_exception, ValidationError, APIError
+from backend.logging_config import setup_logging
+from backend.error_handler import handle_exception, ValidationError, APIError
 from modules.market_researcher.nodes import parallel_analysis
 from dotenv import load_dotenv
 load_dotenv()

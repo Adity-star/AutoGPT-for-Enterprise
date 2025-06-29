@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 from pathlib import Path
 import json
-from app.logging_config import setup_logging
+from backend.logging_config import setup_logging
 
 logger = setup_logging("error_handler")
 
@@ -59,7 +59,7 @@ class CustomException(Exception):
         )
 
 def handle_exception(exc: Exception, error_code: Optional[str] = None) -> Dict[str, Any]:
-    """
+    """s
     Handle any exception and convert it to a standardized format
     
     Args:
