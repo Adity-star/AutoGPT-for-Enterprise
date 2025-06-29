@@ -1,0 +1,32 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2025-06-29T17:10:19.451857",
+    "execution_time_seconds": 7.352255,
+    "total_ideas_processed": 0,
+    "total_errors": 1
+  },
+  "best_business_idea": {
+    "idea": "",
+    "trend_score": 0,
+    "demand_analysis": "",
+    "demand_score": "",
+    "competition_analysis": "",
+    "competition_score": "",
+    "unit_economics": "",
+    "economics_score": "",
+    "final_score": 0,
+    "scoring_breakdown": "",
+    "validation_score": 0,
+    "recommendation": "",
+    "validation_summary": ""
+  },
+  "errors": [
+    "Missing Groq API key. Cannot generate ideas."
+  ],
+  "config": {
+    "max_retries": 2,
+    "batch_size": 3,
+    "timeout": 30,
+    "model_name": "mistral-saba-24b"
+  }
+}

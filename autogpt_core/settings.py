@@ -19,11 +19,7 @@ class Settings(BaseSettings):
 
     GROQ_API_KEY: str
 
-    def __init__(self, **kwargs):
-        logging.info("Loading application settings from environment variables")
-        super().__init__(**kwargs)  # Proper way to call parent class constructor
-        # Ensure SHORT_TERM_MEMORY directory exists if it's configured
-
+    
 # Initialize settings
 settings = Settings()
 logging.info("Settings loaded successfully")
