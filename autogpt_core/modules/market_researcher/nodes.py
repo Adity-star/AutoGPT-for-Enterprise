@@ -18,13 +18,13 @@ from .state import AnalysisConfig, MarketResearchState
 from config.prompts.prompts import get_idea_generation_prompt
 from .services.support_tools import analyze_ideas_with_trends, search_competitors
 from .services.rebbit_service import RedditService
-from settings import Settings
+from settings import settings
 from groq import Groq
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from dotenv import load_dotenv
-from autogpt_core.utils.idea_memory import init_db, save_idea_to_db
+from autogpt_core.utils.idea_memory import init_db, save_idea_to_db, save_trending_posts_to_db, load_recent_trending_posts_from_db
 from utils.logger import logger
 
 
@@ -113,7 +113,7 @@ class AsyncResilientAnalyzer:
     def get_llm(self):
         if self._llm is None:
             self._llm = ChatGroq(
-                model_name=self.config.model_name,  # e.g., "llama-3.3-70b-versatile"
+                model=self.config.model_name,  # e.g., "llama-3.3-70b-versatile"
                 temperature=0.7,
                 api_key=getattr(self.config, "api_key", None)
             )
@@ -215,65 +215,66 @@ def search_competitors_fallback(idea: str) -> List[Dict[str, Any]]:
 analyzer = AsyncResilientAnalyzer(AnalysisConfig())
 
 
+def get_missing_settings_keys(config_obj, keys: List[str]) -> List[str]:
+    return [key for key in keys if not getattr(config_obj, key, "").strip()]
+
+def get_default_trending_fallback() -> List[Dict[str, Any]]:
+    return [
+        {"title": "AI automation and workflow tools", "score": 95},
+        {"title": "Sustainable packaging solutions", "score": 88},
+        {"title": "Remote work productivity apps", "score": 85},
+        {"title": "Health and wellness tracking", "score": 82},
+        {"title": "Electric vehicle charging infrastructure", "score": 79},
+        {"title": "Digital financial literacy platforms", "score": 76},
+        {"title": "Local food delivery optimization", "score": 73},
+        {"title": "Mental health support applications", "score": 70}
+    ]
+
+
+
 async def get_trending_industries(state: MarketResearchState) -> MarketResearchState:
-    """Get trending posts from Reddit or use fallback data"""
+    """Get trending posts: first from DB cache, then from Reddit API, then fallback."""
     try:
         logger.info("Fetching trending industries...")
 
-        # Validate Reddit API keys
-        missing_reddit_keys = []
-        if not getattr(Settings, "REDDIT_CLIENT_ID", None):
-            missing_reddit_keys.append("REDDIT_CLIENT_ID")
-        if not getattr(Settings, "REDDIT_CLIENT_SECRET", None):
-            missing_reddit_keys.append("REDDIT_CLIENT_SECRET")
-        if not getattr(Settings, "REDDIT_USER_AGENT", None):
-            missing_reddit_keys.append("REDDIT_USER_AGENT")
-        if missing_reddit_keys:
-            logger.warning(f"Reddit credentials missing ({', '.join(missing_reddit_keys)}), using fallback trending topics.")
-            top_posts = [
-                {"title": "AI automation and workflow tools", "score": 95},
-                {"title": "Sustainable packaging solutions", "score": 88},
-                {"title": "Remote work productivity apps", "score": 85},
-                {"title": "Health and wellness tracking", "score": 82},
-                {"title": "Electric vehicle charging infrastructure", "score": 79},
-                {"title": "Digital financial literacy platforms", "score": 76},
-                {"title": "Local food delivery optimization", "score": 73},
-                {"title": "Mental health support applications", "score": 70}
-            ]
-            state.trending_posts = top_posts
-            logger.info(f"Retrieved {len(top_posts)} fallback trending posts")
-            state.errors.append(f"Missing Reddit API keys: {', '.join(missing_reddit_keys)}")
+        # Fetching from db if available always try cache lookup
+        cached_posts = load_recent_trending_posts_from_db(limit=10)
+        if cached_posts:
+            logger.info(f"Loaded {len(cached_posts)} trending posts from DB cache.")
+            state.trending_posts = cached_posts
             return state
 
-        # Try to use RedditService if available
+        # 2️⃣ If cache is empty, check keys and fetch from Reddit
+        required_keys = ["REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET", "REDDIT_USER_AGENT"]
+        missing_reddit_keys = get_missing_settings_keys(settings, required_keys)
+        if missing_reddit_keys:
+            logger.warning(f"Missing Reddit API keys: {', '.join(missing_reddit_keys)}")
+            fallback = get_default_trending_fallback()
+            state.trending_posts = fallback
+            state.errors.append(f"Missing Reddit API keys: {', '.join(missing_reddit_keys)} (used fallback data)")
+            return state
+
+        # 3️⃣ Cache empty & credentials present—fetch from Reddit
         try:
             reddit = RedditService()
-            # Run Reddit API call in thread executor
             top_posts = await asyncio.get_event_loop().run_in_executor(
-                None, 
-                lambda: reddit.get_business_trending_posts()
+                None, lambda: reddit.get_business_trending_posts()
             )
-        except (NameError, AttributeError, Exception) as e:
-            logger.warning(f"Reddit service unavailable: {e}. Using fallback data.")
-            top_posts = None
-        
-        if not top_posts:
-            logger.info("Using fallback trending topics")
-            top_posts = [
-                {"title": "AI automation and workflow tools", "score": 95},
-                {"title": "Sustainable packaging solutions", "score": 88},
-                {"title": "Remote work productivity apps", "score": 85},
-                {"title": "Health and wellness tracking", "score": 82},
-                {"title": "Electric vehicle charging infrastructure", "score": 79},
-                {"title": "Digital financial literacy platforms", "score": 76},
-                {"title": "Local food delivery optimization", "score": 73},
-                {"title": "Mental health support applications", "score": 70}
-            ]
-        
-        state.trending_posts = top_posts
-        logger.info(f"Retrieved {len(top_posts)} trending posts")
+            if not top_posts:
+                raise ValueError("Reddit returned no trending posts")
+        except Exception as e:
+            logger.warning(f"Reddit API failed: {e}")
+            fallback = get_default_trending_fallback()
+            state.trending_posts = fallback
+            state.errors.append(f"Reddit API error; used fallback data.")
+            return state
+
+        # 4️⃣ Save new posts to DB and return them
+        save_trending_posts_to_db(top_posts)
+        state.trending_posts = top_posts[:10]
+        logger.info(f"Fetched and saved {len(state.trending_posts)} Reddit posts.")
         return state
-        
+
     except Exception as e:
         error_msg = f"Failed to get trending industries: {e}"
         logger.error(error_msg)
@@ -282,6 +283,16 @@ async def get_trending_industries(state: MarketResearchState) -> MarketResearchS
         return state
 
 
+    except Exception as e:
+        error_msg = f"Failed to get trending industries: {e}"
+        logger.error(error_msg)
+        state.errors.append(error_msg)
+        state.trending_posts = []
+        return state
+
+
+
+       
 async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
     """Generate or accept user-provided business ideas"""
     try:

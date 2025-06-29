@@ -1,4 +1,6 @@
 from modules.market_researcher import nodes  
+
+
 class ResearchInput:
     def __init__(self, keywords, industry):
         self.keywords = keywords
