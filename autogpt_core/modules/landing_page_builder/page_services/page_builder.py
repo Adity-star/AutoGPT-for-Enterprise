@@ -1,10 +1,8 @@
  # HTML layout logic
-
 import aiofiles
 import os
-from jinja2 import Environment, FileSystemLoader,select_autoescape
-from .landing_page import LandingPageContent
-
+from jinja2 import Environment, FileSystemLoader, select_autoescape, TemplateNotFound
+from autogpt_core.modules.landing_page_builder.page_services.landing_page import LandingPageContent
 
 # Set up Jinja2 environment
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), "../templates")
@@ -13,16 +11,17 @@ env = Environment(
     autoescape=select_autoescape(["html", "j2"])
 )
 
-
-async def building_landing_page(content: LandingPageContent,
-                                image_url: str,
-                                theme: str = "minimal",
-                                output_file: str = "landing_pafe.html",
-                                return_as_string: bool = False,
-                                include_meta: bool = True) -> str:
+async def building_landing_page(
+    content: LandingPageContent,
+    image_url: str,
+    theme: str = "minimal",
+    output_file: str = "landing_page.html",
+    return_as_string: bool = False,
+    include_meta: bool = True
+) -> str:
     """
     Build and optionally save a themed landing page HTML.
-    
+
     Args:
         content: LandingPageContent (Pydantic model)
         image_url: str - image to embed
@@ -35,10 +34,10 @@ async def building_landing_page(content: LandingPageContent,
         HTML string or writes to file depending on `return_as_string`
     """
 
-    try: 
+    try:
         template = env.get_template(f"{theme}.html.j2")
-    except Exception as e:
-        raise ValueError(f"Theme '{theme}' not found in templates directory: {e}")
+    except TemplateNotFound:
+        raise ValueError(f"Theme '{theme}' not found. Make sure '{theme}.html.j2' exists in '{TEMPLATE_DIR}'.")
 
     html = template.render(
         headline=content.headline,
@@ -52,7 +51,9 @@ async def building_landing_page(content: LandingPageContent,
     if return_as_string:
         return html
 
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    output_dir = os.path.dirname(output_file) or "."
+    os.makedirs(output_dir, exist_ok=True)
+
     async with aiofiles.open(output_file, "w") as f:
         await f.write(html)
 

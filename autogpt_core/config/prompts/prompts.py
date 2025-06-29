@@ -44,4 +44,6 @@ Competition: {competition_analysis}
 Unit Economics: {unit_economics}
 
 Return the response as JSON with this structure:
-{format_instructions}"""
+{format_instructions}
+"""
+

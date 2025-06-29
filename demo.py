@@ -38,19 +38,39 @@ logger.error("Error message here")
 #     print(f"   URL: {post['permalink']}")
 #     print("-" * 80)
 
-from autogpt_core.modules.market_researcher.graph import run_market_research_agent,get_or_generate_market_research_idea
+# from autogpt_core.modules.market_researcher.graph import run_market_research_agent,get_or_generate_market_research_idea
 
+
+# async def main():
+#     """Main entry point for the market research agent"""
+#     try:
+#         results = await get_or_generate_market_research_idea()
+#         print("Market Research Results:")
+#         for key, value in results.items():
+#             print(f"{key}: {value}")
+#     except Exception as e:
+#         logger.error(f"Error running market research agent: {e}")
+
+# if __name__ == "__main__":
+#          import asyncio
+#          asyncio.run(main())
+
+import asyncio
+from autogpt_core.modules.landing_page_builder.landing_page_graph import landing_page_graph  
+
+from utils.logger import  logging
+logging.basicConfig(level=logging.INFO)
 
 async def main():
-    """Main entry point for the market research agent"""
-    try:
-        results = await get_or_generate_market_research_idea()
-        print("Market Research Results:")
-        for key, value in results.items():
-            print(f"{key}: {value}")
-    except Exception as e:
-        logger.error(f"Error running market research agent: {e}")
+    # Compile the graph
+    graph = landing_page_graph()
+
+    # Run the graph starting with an empty state
+    final_state = await graph.invoke({})
+
+    print("\n✅ Landing page generated successfully!")
+    print("HTML file saved at:", final_state.get("output_path", "Unknown"))
 
 if __name__ == "__main__":
-         import asyncio
-         asyncio.run(main())
+    asyncio.run(main())
+
