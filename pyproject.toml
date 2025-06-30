@@ -33,6 +33,7 @@ dependencies = [
     "google-search-results>=2.4.2",
     "pytrends>=4.9.2",
     "beautifulsoup4>=4.12.2",
+    "sendgrid"
 
     # Aligned langchain ecosystem packages for compatibility:
     "langchain-core==0.3.66",

@@ -3,6 +3,7 @@ from autogpt_core.modules.landing_page_builder.page_services.content_gen import 
 from autogpt_core.modules.landing_page_builder.page_services.image_gen import generate_landing_page_images
 from autogpt_core.modules.landing_page_builder.page_services.page_builder import building_landing_page
 import aiofiles
+from  langchain_core.runnables import RunnableLambda
 import os
 import base64
 
@@ -44,7 +45,6 @@ async def generate_images(state: dict) -> dict:
     return {**state, "image_url": image_result["image_url"], "image_bytes": image_result["image_bytes"]}
 
 
-
 async def build_html_page(state: dict) -> dict:
     content = state["content"]
     image_url = state["image_url"]  
@@ -64,12 +64,13 @@ async def build_html_page(state: dict) -> dict:
 
 
 def landing_page_graph():
-    graph = StateGraph(dict)  
+    graph = StateGraph(dict)
 
-    graph.add_node("fetch_idea", fetch_idea)
-    graph.add_node("generate_content", generate_content)
-    graph.add_node("generate_images", generate_images)
-    graph.add_node("build_html", build_html_page)
+    # Wrap all node functions with RunnableLambda
+    graph.add_node("fetch_idea", RunnableLambda(fetch_idea))
+    graph.add_node("generate_content", RunnableLambda(generate_content))
+    graph.add_node("generate_images", RunnableLambda(generate_images))
+    graph.add_node("build_html", RunnableLambda(build_html_page))
 
     graph.set_entry_point("fetch_idea")
     graph.add_edge("fetch_idea", "generate_content")
