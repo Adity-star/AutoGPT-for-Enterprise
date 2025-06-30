@@ -6,16 +6,24 @@ from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from pathlib import Path
 from from_root import from_root
+import sys
+import re
 
 # Constants
 LOG_DIR = 'logs'
 LOG_FILE_TIMESTAMP = datetime.now().strftime('%m_%d_%Y_%H_%M_%S')
-MAX_LOG_SIZE = 5 * 1024 * 1024  # 5 MB
+MAX_LOG_SIZE = 5 * 1024 * 1024 
 BACKUP_COUNT = 3  
 
 # Ensure log directory exists
 log_dir_path = os.path.join(from_root(), LOG_DIR)
 os.makedirs(log_dir_path, exist_ok=True)
+
+# Force stdout and stderr to UTF-8
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 # helper function to get log file path
 def get_log_file_path(filename_prefix: str = "app", use_timestamp: bool = True) -> str:
@@ -99,7 +107,7 @@ def configure_logger(
     file_handler.setLevel(logging.DEBUG)
 
     # Setup console handler with colored output
-    console_handler = logging.StreamHandler()
+    console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(colored_formatter)
     console_handler.setLevel(logging.INFO)
 
