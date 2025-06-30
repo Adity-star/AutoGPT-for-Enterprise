@@ -8,35 +8,115 @@
     <meta property="og:image" content="{{ image_url }}">
     <style>
         body {
-            font-family: 'Helvetica Neue', sans-serif;
-            padding: 40px;
-            background-color: #f8f8f8;
+            margin: 0;
+            font-family: 'Inter', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(to right, #f9f9f9, #eef2f3);
             color: #2c3e50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 60px 20px;
         }
-        h1 { font-size: 2.5em; }
-        h2 { font-weight: 400; color: #555; }
-        ul { padding-left: 20px; line-height: 1.8; }
-        img { max-width: 100%; height: auto; margin-top: 20px; }
+
+        header {
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: 3em;
+            font-weight: 700;
+            margin-bottom: 0.5em;
+            color: #1a1a1a;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            font-weight: 400;
+            color: #555;
+            margin-bottom: 1.5em;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 2em 0;
+        }
+
+        li {
+            margin: 10px 0;
+            font-size: 1.1em;
+            position: relative;
+        }
+
+        li::before {
+            content: "🚀";
+            position: absolute;
+            left: -30px;
+        }
+
+        img {
+            max-width: 600px;
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            margin: 40px 0;
+            animation: fadeIn 1.5s ease-in-out;
+        }
+
         .cta {
-            margin-top: 30px;
-            background: #3498db;
+            background: #5c67f2;
             color: white;
-            padding: 12px 24px;
-            display: inline-block;
+            padding: 16px 32px;
+            border-radius: 8px;
             text-decoration: none;
+            font-size: 1.2em;
             font-weight: bold;
+            transition: background 0.3s;
+            display: inline-block;
+        }
+
+        .cta:hover {
+            background: #3e42d9;
+        }
+
+        footer {
+            margin-top: 60px;
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
-    <h1>{{ headline }}</h1>
-    <h2>{{ subheadline }}</h2>
-    <ul>
-        {% for feature in features %}
-            <li>{{ feature }}</li>
-        {% endfor %}
-    </ul>
-    <img src="{{ image_url }}" alt="Landing Page Image" />
+
+    <header>
+        <h1>{{ headline }}</h1>
+        <h2>{{ subheadline }}</h2>
+    </header>
+
+    <section>
+        <img src="{{ image_url }}" alt="AI Startup Product Preview" />
+    </section>
+
+    <section>
+        <ul>
+            {% for feature in features %}
+                <li>{{ feature }}</li>
+            {% endfor %}
+        </ul>
+    </section>
+
     <div class="cta">{{ call_to_action }}</div>
+
+    <footer>
+        © {{ headline }} — Powered by AI
+    </footer>
+
 </body>
 </html>
