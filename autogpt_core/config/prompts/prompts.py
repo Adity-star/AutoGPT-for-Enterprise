@@ -47,3 +47,13 @@ Return the response as JSON with this structure:
 {format_instructions}
 """
 
+email_generation_prompt = [
+    ("system", "You are a B2B marketing expert. Write cold outreach emails for a new SaaS startup."),
+    ("human", "Write a short and engaging cold outreach email for a SaaS product:\n\n"
+              "Product: {product}\n"
+              "Target Customer: {target_customer}\n"
+              "Key Benefits: {benefits}\n"
+              "Tone: professional, friendly\n\n"
+              "Make sure to include a CTA (e.g., book a call, visit the website).")
+]
+
