@@ -13,6 +13,6 @@ class CampaignState(BaseModel):
     idea: Optional[Dict] = None
     contacts: Optional[List[str]] = []
     email_content: Optional[str] = None
-    payload: Optional[Dict] = None
+    email_payload: Optional[Dict] = None
     send_status: Optional[str] = None
     custom_message: Optional[str] = None
