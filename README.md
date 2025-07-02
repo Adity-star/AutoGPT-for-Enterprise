@@ -3,73 +3,47 @@
 
 ---
 ```bash
-auto-gpt-enterprise-ai/
-│
-├── README.md
-├── LICENSE
-├── .env.example              # Environment variables template
-├── requirements.txt          # Python dependencies
-├── docker-compose.yml        # (Optional) for full containerized orchestration
-├── start.py                  # Entrypoint script for orchestration
+autogpt_core/
 │
 ├── config/
-│   ├── settings.yaml         # Centralized config: APIs, thresholds, paths
-│   └── prompts/              # Modular prompt templates
-│       ├── idea_generation.txt
-│       ├── landing_page.txt
-│       ├── seo_blog.txt
-│       └── email_campaign.txt
+│   ├── settings.yaml          # Centralized config file for API keys, thresholds, etc.
+│   ├── prompts/               # Prompt templates (idea_generation.txt, seo_blog.txt, etc.)
 │
-├── core/
-│   ├── agent.py              # Main AI orchestration logic
-│   ├── planner.py            # Task decomposition and step planning
-│   └── feedback_loop.py      # Rule-based or RL-based self-improvement
-│
-├── modules/
+├── modules/                  # Worker agents: modular business logic
 │   ├── idea_generator/
-│   │   └── idea_generator.py       # LLM scans and generates trending ideas
-│   │
-│   ├── landing_page_builder/
-│   │   ├── builder.py              # HTML layout logic
-│   │   ├── content_gen.py          # GPT-based copy generation
-│   │   └── image_gen.py            # DALL·E integration
-│   │
-│   ├── email_marketing/
-│   │   ├── sendgrid_integration.py
-│   │   ├── mailchimp_integration.py
-│   │   └── campaign_manager.py     # Strategy, segmentation
-│   │
+│   │   └── idea_generator.py
 │   ├── blog_writer/
-│   │   ├── blog_writer.py          # Writes blog posts from keyword topics
-│   │   └── wordpress_api.py        # Posts to WordPress
-│   │
-│   ├── analytics_monitor/
-│   │   ├── traffic_tracker.py      # Google Analytics API integration
-│   │   ├── kpi_evaluator.py        # Conversion rates, CTR, etc.
-│   │   └── data_logger.py
+│   │   └── blog_writer.py
+│   ├── email_marketing/
+│   │   └── campaign_manager.py
+│   └── ...                   # Other worker modules
 │
+├── retraining/               # Self-improvement, retraining logic
+│   ├── kpi_rules.py
+│   ├── rl_trainer.py
+│   └── dataset_collector.py
 │
-├── retraining/
-│   ├── kpi_rules.py                # Rule-based logic for self-improvement
-│   ├── rl_trainer.py               # (Optional) RL-based adaptation
-│   └── dataset_collector.py        # Collects learning data from performance
-│
-├── utils/
-│   ├── logger.py                   # Logging framework
-│   ├── api_utils.py                # Shared API utilities
-│   ├── validators.py               # Input/output validations
+├── utils/                    # Shared utilities/helpers
+│   ├── logger.py
+│   ├── api_utils.py
+│   ├── validators.py
 │   └── file_manager.py
 │
-├── tests/
-│   ├── test_idea_generator.py
-│   ├── test_landing_page.py
-│   ├── test_email_marketing.py
-│   ├── test_blog_writer.py
-│   ├── test_analytics_monitor.py
-│   └── test_retraining.py
+├── agent.py                  # Main multi-agent orchestration entrypoint
+├── feedback_loop.py          # Agent feedback/self-improvement logic
+├── llm_cache.py              # Optional caching layer for LLM responses
+├── llm_client.py             # Centralized LLM interface for all LLM calls
+├── planner.py                # Task decomposition and workflow planning
+├── prompt_manager.py         # Loads & manages prompt templates dynamically
+├── settings.py               # Loads and parses settings.yaml, env vars
+├── worker.py                 # Celery worker and task definitions
 │
-└── docs/
-    ├── architecture.md             # High-level system design
-    ├── modules.md                  # Module-specific explanations
-    └── api_keys.md                 # Setup for external integrations
+backend/
+├── agent_runner.py           # Runs/executes agents (worker controller)
+├── api_schema.py             # FastAPI Pydantic schemas for request/response
+├── main.py                   # FastAPI backend server (API endpoints)
+│
+data/                        # Raw data, datasets, logs, cache files
+docs/                        # Documentation, architecture, API keys, modules info
+
 ```
