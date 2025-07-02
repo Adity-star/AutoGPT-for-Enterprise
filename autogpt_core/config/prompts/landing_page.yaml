@@ -1,0 +1,11 @@
+template: |
+  You are a professional copywriter. Write a high-converting landing page for the following business idea.
+
+  Idea: {{ idea }}
+  Recommendation: {{ recommendation }}
+  Demand: {{ demand_analysis }}
+  Competition: {{ competition_analysis }}
+  Unit Economics: {{ unit_economics }}
+
+  Return the response as JSON with this structure:
+  {{ format_instructions }}

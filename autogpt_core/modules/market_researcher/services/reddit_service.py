@@ -4,11 +4,11 @@ import os
 import time
 import logging
 from dotenv import load_dotenv
-from typing import List, Dict, Optional
-from datetime import datetime, timedelta
+from typing import List, Dict
+from datetime import datetime
 import yaml
+from autogpt_core.core.secrets import secrets
 
-load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,17 +28,17 @@ def load_subreddits(category: str = "business", config_path: str = "autogpt_core
 class RedditService:
     def __init__(self):
         self.reddit = self._get_reddit_client()
-        self.rate_limit_delay = 2  # seconds between requests
+        self.rate_limit_delay = 2  
         self.last_request_time = 0
         
     def _get_reddit_client(self):
         """Initialize Reddit client with error handling"""
         try:
             return praw.Reddit(
-                client_id=os.getenv("REDDIT_CLIENT_ID"),
-                client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
-                user_agent=os.getenv("REDDIT_USER_AGENT")
-            )
+                client_id=secrets.REDDIT_CLIENT_ID,
+                client_secret=secrets.REDDIT_CLIENT_SECRET,
+                user_agent=secrets.REDDIT_USER_AGENT
+        )
         except Exception as e:
             logger.error(f"Failed to initialize Reddit client: {e}")
             raise

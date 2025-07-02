@@ -10,8 +10,7 @@ from langchain.output_parsers import PydanticOutputParser
 from modules.landing_page_builder.page_services.landing_page import LandingPageContent
 from autogpt_core.config.prompts.prompts import content_generation_prompt
 from utils.logger import logging
-from dotenv import load_dotenv
-load_dotenv()
+from autogpt_core.llm_service.secrets import secrets
 
 
 # Setup logging
@@ -26,7 +25,7 @@ prompt_template = ChatPromptTemplate.from_template(
 )
 
 # Step 2: Initialize LLM client
-groq_api_key = os.getenv("GROQ_API_KEY")
+groq_api_key = secrets.GROQ_API_KEY
 if not groq_api_key:
     raise ValueError("GROQ_API_KEY environment variable not set.")
 

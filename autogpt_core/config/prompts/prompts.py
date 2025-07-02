@@ -1,59 +1,35 @@
-def get_idea_generation_prompt(posts):
-    return f"""
-You are a business advisor specializing in identifying high-potential, revenue-generating business ideas from user discussions. 
-Based on the following Reddit post titles and contents, generate up to 5 innovative business ideas that have strong commercial viability.
+# core/prompt.py
 
-For each idea, provide:
-- A concise description of the business idea or product opportunity
-- The type of insight: one of ["Pain Point", "Tool Idea", "Marketing Insight", "Question", "Trend"]
-- Scores from 1 to 10 (where 10 is highest) for market demand, novelty, feasibility, and monetization potential
-- The primary target audience (e.g., remote workers, parents, SaaS companies)
-- Your confidence score (0-100) indicating how strong this opportunity is
+from core.prompt_manager import render_prompt, get_prompt_metadata
 
-**Important: Only include ideas where monetization potential is 7 or higher and confidence is 70 or above.**
 
-Respond ONLY in strict JSON format as follows:
-{{
-  "ideas": [
-    {{
-      "idea": "...",
-      "description": "...",
-      "type": "Tool Idea",
-      "market_demand": 8,
-      "novelty": 7,
-      "feasibility": 9,
-      "monetization_potential": 9,
-      "target_audience": "...",
-      "confidence": 85
-    }},
-    ...
-  ]
-}}
+def get_idea_generation_prompt(posts: str) -> str:
+    return render_prompt("idea_generation", posts=posts)
 
-Posts:
-{posts}
-""" 
 
-content_generation_prompt = """
-You are a professional copywriter. Write a high-converting landing page for the following business idea.
+def get_landing_page_prompt(
+    idea: str,
+    recommendation: str,
+    demand_analysis: str,
+    competition_analysis: str,
+    unit_economics: str,
+    format_instructions: str
+) -> str:
+    return render_prompt(
+        "landing_page",
+        idea=idea,
+        recommendation=recommendation,
+        demand_analysis=demand_analysis,
+        competition_analysis=competition_analysis,
+        unit_economics=unit_economics,
+        format_instructions=format_instructions
+    )
 
-Idea: {idea}
-Recommendation: {recommendation}
-Demand: {demand_analysis}
-Competition: {competition_analysis}
-Unit Economics: {unit_economics}
 
-Return the response as JSON with this structure:
-{format_instructions}
-"""
-
-email_generation_prompt = [
-    ("system", "You are a B2B marketing expert. Write cold outreach emails for a new SaaS startup."),
-    ("human", "Write a short and engaging cold outreach email for a SaaS product:\n\n"
-              "Product: {product}\n"
-              "Target Customer: {target_customer}\n"
-              "Key Benefits: {benefits}\n"
-              "Tone: professional, friendly\n\n"
-              "Make sure to include a CTA (e.g., book a call, visit the website).")
-]
-
+def get_email_generation_prompt(product: str, target_customer: str, benefits: str) -> tuple[str, str]:
+    """
+    Returns a tuple of (system_prompt, user_prompt)
+    """
+    system = get_prompt_metadata("email_outreach").get("system_prompt", "")
+    prompt = render_prompt("email_outreach", product=product, target_customer=target_customer, benefits=benefits)
+    return system, prompt
