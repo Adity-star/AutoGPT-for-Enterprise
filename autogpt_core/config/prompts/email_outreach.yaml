@@ -1,0 +1,11 @@
+template: |
+  Product: {{ product }}
+  Target Customer: {{ target_customer }}
+  Key Benefits: {{ benefits }}
+  Tone: professional, friendly
+
+  Write a short and engaging cold outreach email for a SaaS product. 
+  Make sure to include a CTA (e.g., book a call, visit the website).
+
+metadata:
+  system_prompt: "You are a B2B marketing expert. Write cold outreach emails for a new SaaS startup."

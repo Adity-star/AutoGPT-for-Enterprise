@@ -1,0 +1,8 @@
+template: |
+  Estimate the unit economics for this business idea: "{{ input }}"
+  
+  Return a JSON object like:
+  {
+    "unit_economics": "short summary",
+    "economics_score": number (1-10)
+  }
