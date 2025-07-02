@@ -26,11 +26,8 @@ llm = ChatGroq(
             )
 
 
+
 def load_campaign_content(state: CampaignState) -> CampaignState:
-    """
-    Load the most recent validated idea from the SQLite database.
-    This will be used to generate email content for the campaign.
-    """
     logger.info("Loading idea from database...")
 
     ideas = load_ideas_from_db(limit=1)
@@ -41,11 +38,12 @@ def load_campaign_content(state: CampaignState) -> CampaignState:
     idea_data = ideas[0]
     logger.info(f"Idea loaded successfully: {idea_data.get('idea')}")
 
-    # Merge with existing state
-    return {
-        **state,
-        "idea_data": idea_data
-    }
+    state_data = state.dict()
+    state_data["idea"] = idea_data
+
+    return CampaignState(**state_data)
+
+
 
 email_prompt = ChatPromptTemplate.from_messages(email_generation_prompt)
 
@@ -53,7 +51,7 @@ email_prompt = ChatPromptTemplate.from_messages(email_generation_prompt)
 def generate_email_copy(state: CampaignState) -> CampaignState:
     logger.info("Generating marketing email for campaign...")
 
-    idea_data = state.get("idea_data", {})
+    idea_data = state.idea or {}
     product = idea_data.get("idea", "AI-powered hiring assistant for small businesses")
     target_customer = "early-stage startups and small business owners"
     benefits = idea_data.get("recommendation", "Reduces hiring time, automates candidate engagement, and increases recruiter efficiency.")
@@ -68,8 +66,8 @@ def generate_email_copy(state: CampaignState) -> CampaignState:
     email_text = response.content.strip()
 
     logger.info("Email content generated successfully.")
-    
-    return {
-        **state,
-        "email_content": email_text
-    }
+
+    state_data = state.dict()
+    state_data["email_content"] = email_text
+
+    return CampaignState(**state_data)

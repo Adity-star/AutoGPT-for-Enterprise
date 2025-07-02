@@ -25,6 +25,8 @@ def build_email_payload(state: CampaignState) -> CampaignState:
 
     logger.info(f"Email payload built successfully: {subject} -> recipient: {recipient_email}")
 
-    state.email_payload = payload
-    return state
+    state_data = state.dict()
+    state_data["email_payload"] = payload
+
+    return CampaignState(**state_data)
 
