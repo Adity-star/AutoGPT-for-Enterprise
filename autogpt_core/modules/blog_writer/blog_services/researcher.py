@@ -4,14 +4,13 @@ import os
 import httpx
 from utils.logger import logger
 from autogpt_core.modules.blog_writer.blog_services.blog_state import BlogWriterAgentState
-
-SERP_API_KEY = os.getenv("SERP_API_KEY")
+from autogpt_core.core.secrets import secrets
 
 async def fetch_serp_results(query: str, num_results: int = 5) -> str:
     url = "https://serpapi.com/search"
     params = {
         "q": query,
-        "api_key": SERP_API_KEY,
+        "api_key": secrets.SERP_API_KEY,
         "num": num_results,
         "engine": "google",
     }
@@ -52,7 +51,8 @@ async def run_blog_research(state: BlogWriterAgentState) -> BlogWriterAgentState
     - Unique Opportunity Angle
     """
 
-    summary = await analyzer.generate_content(prompt)
+
+    summary = await generate_content(prompt)
     state.research_summary = summary.strip()
 
     return state

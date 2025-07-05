@@ -27,6 +27,9 @@ class SecretsManager(BaseSettings):
     SENDGRID_API_KEY: str
     OPENAI_API_KEY: str
 
+    SERP_API_KEY: str
+
+
     
     APP_NAME: str = "AutoGPT For Enterprises"
 

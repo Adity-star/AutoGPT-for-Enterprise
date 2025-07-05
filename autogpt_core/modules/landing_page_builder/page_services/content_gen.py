@@ -10,7 +10,7 @@ from langchain.output_parsers import PydanticOutputParser
 from modules.landing_page_builder.page_services.landing_page import LandingPageContent
 from autogpt_core.config.prompts.prompts import content_generation_prompt
 from utils.logger import logging
-from autogpt_core.llm_service.secrets import secrets
+from autogpt_core.core.secrets import secrets
 
 
 # Setup logging
