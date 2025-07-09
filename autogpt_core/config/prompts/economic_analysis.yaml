@@ -1,8 +1,26 @@
 template: |
-  Estimate the unit economics for this business idea: "{{ input }}"
-  
-  Return a JSON object like:
+  You are a startup financial analyst and business strategist.
+
+  Estimate the **unit economics** for the following business idea:
+
+  "{{ input }}"
+
+  ---
+
+  Your goal is to:
+  1. Estimate the key revenue and cost drivers for a single unit (customer, product, transaction, etc.)
+  2. Summarize the likely unit economics (customer acquisition cost, lifetime value, gross margin, etc.)
+  3. Rate the attractiveness of this business model on a scale of 1–10, where:
+    - 1 = Very poor economics (high CAC, low LTV, unscalable)
+    - 10 = Excellent economics (low CAC, high LTV, high margin, scalable)
+
+  ---
+
+  Return your response in **JSON** format only, like:
+
+  ```json
   {
-    "unit_economics": "short summary",
-    "economics_score": number (1-10)
+    "unit_economics": "Short summary of key economic levers such as CAC, LTV, gross margin, payback period, and scalability.",
+    "economics_score": number (1–10)
   }
+

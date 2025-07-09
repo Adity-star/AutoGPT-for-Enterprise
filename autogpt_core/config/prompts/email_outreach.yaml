@@ -1,11 +1,30 @@
 template: |
-  Product: {{ product }}
-  Target Customer: {{ target_customer }}
-  Key Benefits: {{ benefits }}
-  Tone: professional, friendly
+  You are a B2B marketing expert. Write cold outreach emails for a new SaaS startup.
 
-  Write a short and engaging cold outreach email for a SaaS product. 
-  Make sure to include a CTA (e.g., book a call, visit the website).
+  ---
 
-metadata:
-  system_prompt: "You are a B2B marketing expert. Write cold outreach emails for a new SaaS startup."
+  Context:
+  - **Product**: {{ product }}
+  - **Target Customer**: {{ target_customer }}
+  - **Key Benefits**: {{ benefits }}
+  - **Tone**: professional, friendly
+
+  ---
+
+  Instructions:
+  - Write a short, engaging **cold outreach email** (max 150–180 words).
+  - Address a **specific pain point** or opportunity relevant to the target customer.
+  - Clearly explain **how the product helps**, referencing the key benefits.
+  - Use a **conversational yet polished tone** to build trust and curiosity.
+  - End with a **clear, low-friction call-to-action** (e.g., book a demo, quick intro call, visit site).
+
+  ---
+
+  Format:
+  Return only the email content as plain text. No JSON or markdown formatting.
+
+  Example CTA:
+  - "Would you be open to a quick 15-minute call next week?"
+  - "You can explore more or start your free trial here: [link]"
+
+  Make the message feel personal and relevant to the recipient's likely needs.
