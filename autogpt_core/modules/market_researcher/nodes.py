@@ -26,7 +26,6 @@ from autogpt_core.core.prompt_manager import render_prompt
 llm_service = LLMService(provider="groq")
 
 
-
 class CacheEntry:
     """Cache entry with TTL support"""
     def __init__(self, value: str, ttl_minutes: int = 60):
@@ -265,8 +264,27 @@ async def get_trending_industries(state: MarketResearchState) -> MarketResearchS
         state.trending_posts = []
         return state
 
+async def safe_parse_json_from_llm(llm_service, prompt: str, retries: int = 3, delay: float = 2.0):
+    last_response = None
+    for attempt in range(1, retries + 1):
+        try:
+            logger.info(f"LLM JSON parse attempt {attempt}")
+            response_text = await llm_service.chat(prompt)
+            last_response = response_text
 
+            if not response_text or not response_text.strip():
+                raise ValueError("Empty response received from LLM")
 
+            data = json.loads(response_text)
+            return data
+
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"Attempt {attempt} failed to parse JSON or empty response: {e}")
+            if attempt < retries:
+                await asyncio.sleep(delay)
+            else:
+                logger.error(f"All {retries} attempts failed. Last response was:\n{last_response}")
+                return None
 
 async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
     """Generate or accept user-provided business ideas using centralized LLMService and prompt_manager"""
@@ -275,7 +293,7 @@ async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
 
         # Validate Groq API key (via secrets)
         required_keys = ["GROQ_API_KEY"]
-        missing_keys = validate_env_keys(secrets, required_keys)
+        missing_keys = validate_env_keys(required_keys)
         if missing_keys:
             error_msg = f"Missing Groq API key(s): {', '.join(missing_keys)}. Cannot generate ideas."
             logger.error(error_msg)
@@ -304,18 +322,22 @@ async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
             prompt = render_prompt("idea_generation", posts=topics_text)
         except Exception as e:
             logger.warning(f"Failed to load idea_generation prompt template: {e}")
-            prompt = get_idea_generation_prompt_fallback(topics_text)  # fallback
+            prompt = get_idea_generation_prompt_fallback(topics_text) 
 
         # Use centralized llm_service to generate ideas
         response_text = await llm_service.chat(prompt)
 
-        # Parse JSON ideas safely
-        try:
-            ideas_data = json.loads(response_text)
-            ideas = ideas_data.get("ideas", [])
-        except Exception as e:
-            logger.error(f"Failed to parse ideas JSON: {e}")
-            ideas = []
+        # Use the safe wrapper to get JSON data with retries
+        ideas_data = await safe_parse_json_from_llm(llm_service, prompt)
+
+        if not ideas_data:
+            error_msg = "Failed to get valid JSON ideas from LLM after retries."
+            logger.error(error_msg)
+            state.errors.append(error_msg)
+            state.idea_list = []
+            return state
+        
+        ideas = ideas_data.get("ideas", [])
 
         # Validate and limit ideas
         validated_ideas = []
@@ -337,8 +359,6 @@ async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
         state.errors.append(error_msg)
         state.idea_list = []
         return state
-
-
 
 
 

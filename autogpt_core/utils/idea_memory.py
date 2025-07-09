@@ -77,7 +77,7 @@ def save_trending_posts_to_db(posts: List[Dict[str, any]]) -> None:
 
 
 
-TRENDING_POSTS_CACHE_EXPIRY_MINUTES = 60  # Change as needed
+TRENDING_POSTS_CACHE_EXPIRY_MINUTES = 60 
 
 def load_recent_trending_posts_from_db(limit: int = 10) -> List[Dict[str, Any]]:
     """Load recent trending posts from the database if within cache window"""

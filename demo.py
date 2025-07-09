@@ -64,8 +64,24 @@ if __name__ == "__main__":
 
 
 
+# from autogpt_core.modules.blog_writer.blog_generator import blog_generator_graph
+# import asyncio
+
+# async def main():
+#     graph = blog_generator_graph()
+
+#     initial_state = {} 
+#     final_state = await graph.ainvoke({})
+
+#     print("\n✅ Blog generated successfully!\n")
+#     print("📝 Final Draft:\n")
+#     print(final_state.get("state").blog_draft or "No draft found.")
+
+# if __name__ == "__main__":
+#     asyncio.run(main())
 
 
+from utils.idea_memory import load_ideas_from_db
 
-
+load_ideas_from_db()
 

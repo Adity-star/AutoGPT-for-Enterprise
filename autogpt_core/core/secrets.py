@@ -19,7 +19,6 @@ class SecretsManager(BaseSettings):
     REDDIT_USER_AGENT: str
 
     GOOGLE_API_KEY: str
-    SERPAPI_API_KEY: str
 
     GROQ_API_KEY: str
 

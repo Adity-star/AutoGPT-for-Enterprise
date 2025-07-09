@@ -52,8 +52,11 @@ async def run_blog_research(state: BlogWriterAgentState) -> BlogWriterAgentState
     - Unique Opportunity Angle
     """
 
+    try:
 
-    summary = await LLMService.sync_chat(prompt)
-    state.research_summary = summary.strip()
+     summary = await LLMService.sync_chat(prompt)
+    except Exception as e:
+        logger.info("LLM failed to generate research summery: {e}")
+        state.research_summary = summary.strip()
 
     return state

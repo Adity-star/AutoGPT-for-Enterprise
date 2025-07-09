@@ -5,7 +5,7 @@ from jinja2 import Template
 from pathlib import Path
 from typing import Any, Dict
 
-PROMPT_DIR = Path("config/prompts")
+PROMPT_DIR = Path(__file__).parent.parent / "config" / "prompts"
 
 
 class PromptTemplate:

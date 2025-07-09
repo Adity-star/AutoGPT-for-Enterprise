@@ -12,9 +12,9 @@ template: |
   **Important: Only include ideas where monetization potential is 7 or higher and confidence is 70 or above.**
 
   Respond ONLY in strict JSON format as follows:
-  {{
+  {{ '{{' }}
     "ideas": [
-      {{
+      {{ '{{' }}
         "idea": "...",
         "description": "...",
         "type": "Tool Idea",
@@ -24,10 +24,9 @@ template: |
         "monetization_potential": 9,
         "target_audience": "...",
         "confidence": 85
-      }},
-      ...
+      {{ '}}' }}
     ]
-  }}
+  {{ '}}' }}
 
   Posts:
   {{ posts }}
