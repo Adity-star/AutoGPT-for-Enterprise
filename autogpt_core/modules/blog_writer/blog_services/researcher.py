@@ -5,6 +5,7 @@ import httpx
 from utils.logger import logger
 from autogpt_core.modules.blog_writer.blog_services.blog_state import BlogWriterAgentState
 from autogpt_core.core.secrets import secrets
+from autogpt_core.core.llm_service import LLMService
 
 async def fetch_serp_results(query: str, num_results: int = 5) -> str:
     url = "https://serpapi.com/search"
@@ -52,7 +53,7 @@ async def run_blog_research(state: BlogWriterAgentState) -> BlogWriterAgentState
     """
 
 
-    summary = await generate_content(prompt)
+    summary = await LLMService.sync_chat(prompt)
     state.research_summary = summary.strip()
 
     return state

@@ -1,11 +1,83 @@
-template: |
-  You are a professional copywriter. Write a high-converting landing page for the following business idea.
+template: | 
 
-  Idea: {{ idea }}
-  Recommendation: {{ recommendation }}
-  Demand: {{ demand_analysis }}
-  Competition: {{ competition_analysis }}
-  Unit Economics: {{ unit_economics }}
+  You are a professional conversion-focused copywriter and landing page strategist.
 
-  Return the response as JSON with this structure:
-  {{ format_instructions }}
+  Your task is to write a high-converting, full landing page for a new business idea. This landing page should follow best practices in copywriting, storytelling, psychology, and value proposition design.
+
+
+  - **Business Idea**: {{ idea }}
+  - **Expert Recommendation**: {{ recommendation }}
+  - **Market Demand Analysis**: {{ demand_analysis }}
+  - **Competition Analysis**: {{ competition_analysis }}
+  - **Unit Economics Summary**: {{ unit_economics }}
+
+  ## Guidelines:
+
+  1. Use persuasive copy that speaks directly to the ideal customer.
+  2. Follow proven copy structures such as AIDA (Attention, Interest, Desire, Action) or PAS (Problem, Agitation, Solution).
+  3. Address market demand and how this product meets it.
+  4. Clearly differentiate from competitors.
+  5. Support the value proposition using elements from unit economics (e.g., cost/value efficiency).
+  6. Write in a friendly, modern, and confident tone appropriate to the product's target audience.
+  7. Use benefit-driven language, and include strong calls to action (CTAs).
+
+  ## Return your output in **JSON** using the following structure:
+
+  ```json
+  {
+    "headline": "Main attention-grabbing headline",
+    "subheadline": "Supporting statement that builds interest",
+    "hero_section": {
+      "title": "Hero section title",
+      "description": "Brief paragraph describing the core offering",
+      "cta": "Primary call to action text"
+    },
+    "problem_section": {
+      "title": "What's the problem?",
+      "description": "Describe the pain points this business solves"
+    },
+    "solution_section": {
+      "title": "Our Solution",
+      "description": "How the business addresses the problem effectively",
+      "key_benefits": [
+        "Benefit 1",
+        "Benefit 2",
+        "Benefit 3"
+      ]
+    },
+    "features_section": {
+      "title": "What You'll Get",
+      "features": [
+        "Feature 1",
+        "Feature 2",
+        "Feature 3"
+      ]
+    },
+    "social_proof_section": {
+      "title": "Trusted by People Like You",
+      "testimonials": [
+        {
+          "quote": "Customer testimonial here.",
+          "name": "Customer Name",
+          "title": "Job Title / Company"
+        }
+      ]
+    },
+    "pricing_section": {
+      "title": "Simple, Transparent Pricing",
+      "description": "Pricing strategy aligned with unit economics",
+      "plans": [
+        {
+          "name": "Plan Name",
+          "price": "$X/month",
+          "features_included": ["Feature A", "Feature B"]
+        }
+      ]
+    },
+    "cta_section": {
+      "title": "Ready to Get Started?",
+      "cta_text": "Call to action text",
+      "cta_button": "CTA Button Label"
+    }
+  }
+
