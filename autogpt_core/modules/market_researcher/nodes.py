@@ -12,10 +12,10 @@ from pytrends.request import TrendReq
 
 
 from autogpt_core.modules.market_researcher.state import AnalysisConfig, MarketResearchState, IdeaResponse
-
+from autogpt_core.modules.market_researcher.services.support_tools import safe_parse_json_from_llm, safe_parse_json_response
 from autogpt_core.modules.market_researcher.services.support_tools import search_competitors
 from modules.market_researcher.services.reddit_service import RedditService
-from autogpt_core.utils.idea_memory import init_db, save_idea_to_db, save_trending_posts_to_db, load_recent_trending_posts_from_db
+from autogpt_core.utils.idea_memory import save_idea_to_db, save_trending_posts_to_db, load_recent_trending_posts_from_db
 from utils.logger import logger
 
 from autogpt_core.core.llm_service import LLMService
@@ -263,28 +263,8 @@ async def get_trending_industries(state: MarketResearchState) -> MarketResearchS
         state.errors.append(error_msg)
         state.trending_posts = []
         return state
+            
 
-async def safe_parse_json_from_llm(llm_service, prompt: str, retries: int = 3, delay: float = 2.0):
-    last_response = None
-    for attempt in range(1, retries + 1):
-        try:
-            logger.info(f"LLM JSON parse attempt {attempt}")
-            response_text = await llm_service.chat(prompt)
-            last_response = response_text
-
-            if not response_text or not response_text.strip():
-                raise ValueError("Empty response received from LLM")
-
-            data = json.loads(response_text)
-            return data
-
-        except (json.JSONDecodeError, ValueError) as e:
-            logger.warning(f"Attempt {attempt} failed to parse JSON or empty response: {e}")
-            if attempt < retries:
-                await asyncio.sleep(delay)
-            else:
-                logger.error(f"All {retries} attempts failed. Last response was:\n{last_response}")
-                return None
 
 async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
     """Generate or accept user-provided business ideas using centralized LLMService and prompt_manager"""
@@ -292,8 +272,7 @@ async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
         logger.info("Processing idea generation...")
 
         # Validate Groq API key (via secrets)
-        required_keys = ["GROQ_API_KEY"]
-        missing_keys = validate_env_keys(required_keys)
+        missing_keys = validate_env_keys(["GROQ_API_KEY"])
         if missing_keys:
             error_msg = f"Missing Groq API key(s): {', '.join(missing_keys)}. Cannot generate ideas."
             logger.error(error_msg)
@@ -320,12 +299,11 @@ async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
         # Load and render prompt via prompt_manager
         try:
             prompt = render_prompt("idea_generation", posts=topics_text)
+            logger.debug(f"Prompt used:\n{prompt}")
         except Exception as e:
             logger.warning(f"Failed to load idea_generation prompt template: {e}")
             prompt = get_idea_generation_prompt_fallback(topics_text) 
 
-        # Use centralized llm_service to generate ideas
-        response_text = await llm_service.chat(prompt)
 
         # Use the safe wrapper to get JSON data with retries
         ideas_data = await safe_parse_json_from_llm(llm_service, prompt)
@@ -366,8 +344,7 @@ async def analyze_single_idea_demand(idea: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"Analyzing demand for idea: {idea.get('idea', 'Unknown')}")
     try:
         # Validate Groq API key
-        required_keys = ["GROQ_API_KEY"]
-        missing_keys = validate_env_keys(secrets, required_keys)
+        missing_keys = validate_env_keys(["GROQ_API_KEY"])
         if missing_keys:
             logger.error(f"Missing Groq API key(s): {', '.join(missing_keys)}. Cannot analyze demand.")
             return {
@@ -376,13 +353,12 @@ async def analyze_single_idea_demand(idea: Dict[str, Any]) -> Dict[str, Any]:
                 "demand_score": "NA",
                 "analysis_type": "demand"
             }
-        
+
         # Render prompt using prompt_manager
         try:
             prompt = render_prompt("demand_analysis", idea=idea.get("idea", ""))
         except Exception as e:
             logger.warning(f"Failed to load demand_analysis prompt template: {e}")
-            # Fallback prompt if needed
             prompt = f"""
             You are a business analyst. Respond in JSON as specified.
 
@@ -394,14 +370,11 @@ async def analyze_single_idea_demand(idea: Dict[str, Any]) -> Dict[str, Any]:
             }}
             """
 
-        # Use centralized LLM service to get analysis
-        response_text = await llm_service.chat(prompt)
+        # Use centralized LLM service and parse with retries
+        result = await safe_parse_json_response(llm_service, prompt)
 
-        # Parse JSON response safely
-        try:
-            result = json.loads(response_text)
-        except Exception as e:
-            logger.error(f"Failed to parse demand analysis JSON: {e}")
+        if not result:
+            logger.error("Failed to get valid JSON from LLM for demand analysis.")
             return {
                 **idea,
                 "demand_analysis": "No demand analysis available (parse error)",
@@ -409,7 +382,12 @@ async def analyze_single_idea_demand(idea: Dict[str, Any]) -> Dict[str, Any]:
                 "analysis_type": "demand"
             }
 
-        return {**idea, **result, "analysis_type": "demand"}
+        return {
+            **idea,
+            "demand_analysis": result.get("demand_analysis", "No summary provided"),
+            "demand_score": result.get("demand_score", "NA"),
+            "analysis_type": "demand"
+        }
 
     except Exception as e:
         logger.error(f"Demand analysis failed: {e}")
@@ -419,14 +397,14 @@ async def analyze_single_idea_demand(idea: Dict[str, Any]) -> Dict[str, Any]:
             "demand_score": "NA",
             "analysis_type": "demand"
         }
-from serpapi import GoogleSearch
+
 
 async def analyze_single_idea_competition(idea: Dict[str, Any]) -> Dict[str, Any]:
     try:
         # Validate SerpAPI key
-        api_key = secrets.SERPAPI_API_KEY
-        if not api_key:
-            logger.error("SERPAPI_API_KEY environment variable is not set")
+        missing_keys = validate_env_keys(["SERP_API_KEY"])
+        if not missing_keys:
+            logger.error("SERP_API_KEY environment variable is not set")
             return {
                 **idea,
                 "competition_analysis": "No competition analysis available (missing SerpAPI key)",
@@ -445,7 +423,7 @@ async def analyze_single_idea_competition(idea: Dict[str, Any]) -> Dict[str, Any
                 f"Found {len(competitors)} competitors: " +
                 ", ".join(competitors)
             )
-            competition_score = min(len(competitors), 10)  # simple heuristic score
+            competition_score = min(len(competitors), 10)  
         else:
             competition_summary = "No significant competitors found."
             competition_score = 1
@@ -471,9 +449,8 @@ async def analyze_single_idea_economics(idea: Dict[str, Any]) -> Dict[str, Any]:
     try:
         logger.info(f"Analyzing economics for idea: {idea.get('idea', 'Unknown')}")
 
-        # ✅ Validate Groq API key using centralized secrets
-        required_keys = ["GROQ_API_KEY"]
-        missing_keys = validate_env_keys(secrets, required_keys)
+        # Validate Groq API key
+        missing_keys = validate_env_keys(["GROQ_API_KEY"])
         if missing_keys:
             logger.error(f"Missing required keys: {missing_keys}")
             return {
@@ -483,30 +460,41 @@ async def analyze_single_idea_economics(idea: Dict[str, Any]) -> Dict[str, Any]:
                 "analysis_type": "economics"
             }
 
-        # ✅ Use central prompt manager
-        prompt = render_prompt("economics_analysis", input=idea.get("idea", ""))
-
-        # ✅ Use centralized LLM service
-        llm = LLMService(provider="groq")
-        response_text = await llm.chat(prompt)
-
-        # ✅ Parse LLM JSON output safely
+        # Render the economics analysis prompt
         try:
-            parsed = json.loads(response_text)
-            return {
-                **idea,
-                "unit_economics": parsed.get("unit_economics", "No economics provided"),
-                "economics_score": parsed.get("economics_score", "NA"),
-                "analysis_type": "economics"
-            }
+            prompt = render_prompt("economic_analysis", input=idea.get("idea", ""))
         except Exception as e:
-            logger.warning(f"Failed to parse JSON from economics analysis: {e}")
+            logger.warning(f"Failed to load economic_analysis prompt: {e}")
+            prompt = f"""
+            You are a financial analyst. Analyze this business idea:
+            "{idea.get('idea', '')}"
+
+            Respond ONLY in JSON format:
+            {{
+              "unit_economics": "Summary of revenue, cost structure, margins, etc.",
+              "economics_score": number  # 1-10, where 10 is high profitability
+            }}
+            """
+
+        # Use safe JSON parse wrapper that calls the LLM
+        llm = LLMService(provider="groq")
+        result = await safe_parse_json_response(llm, prompt)
+
+        if not result:
+            logger.error("Failed to get valid economics JSON from LLM")
             return {
                 **idea,
-                "unit_economics": response_text.strip() or "No economics response",
+                "unit_economics": "No economics analysis available (parse error)",
                 "economics_score": "NA",
                 "analysis_type": "economics"
             }
+
+        return {
+            **idea,
+            "unit_economics": result.get("unit_economics", "No economics provided"),
+            "economics_score": result.get("economics_score", "NA"),
+            "analysis_type": "economics"
+        }
 
     except Exception as e:
         logger.exception(f"Economics analysis failed: {e}")
@@ -516,6 +504,7 @@ async def analyze_single_idea_economics(idea: Dict[str, Any]) -> Dict[str, Any]:
             "economics_score": "NA",
             "analysis_type": "economics"
         }
+
 
 
 def analyze_ideas_with_trends(state: MarketResearchState) -> MarketResearchState:
@@ -541,6 +530,7 @@ def analyze_ideas_with_trends(state: MarketResearchState) -> MarketResearchState
 
     state.idea_trend_scores = trend_scores
     return state
+
 
 async def parallel_analysis(state: MarketResearchState) -> MarketResearchState:
     """Run parallel analysis on all ideas"""

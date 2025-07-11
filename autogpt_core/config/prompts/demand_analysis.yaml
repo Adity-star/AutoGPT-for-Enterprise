@@ -1,0 +1,21 @@
+template: |
+  You are an expert business analyst.
+
+  Analyze the market demand for the following business idea:
+
+  "{{ idea }}"
+
+  Provide your analysis in the following JSON format ONLY (no extra text):
+
+  {
+    "demand_analysis": "A brief summary of the market demand for the idea.",
+    "demand_score": number  # An integer from 1 (low demand) to 10 (high demand)
+  }
+
+  Make sure the JSON is properly formatted.
+metadata:
+  description: "Analyzes market demand for a business idea and returns a summary and score."
+  output_format: "JSON"
+  output_keys:
+    - demand_analysis
+    - demand_score
