@@ -6,21 +6,29 @@ template: |
   "{{ input }}"
 
   ---
-
-  Your goal is to:
-  1. Estimate the key revenue and cost drivers for a single unit (customer, product, transaction, etc.)
-  2. Summarize the likely unit economics (customer acquisition cost, lifetime value, gross margin, etc.)
-  3. Rate the attractiveness of this business model on a scale of 1–10, where:
-    - 1 = Very poor economics (high CAC, low LTV, unscalable)
-    - 10 = Excellent economics (low CAC, high LTV, high margin, scalable)
+  Your task:
+  1. Identify key revenue and cost drivers for a single unit (e.g., customer, product, transaction).
+  2. Estimate unit economics (e.g., CAC, LTV, gross margin, payback period, scalability).
+  3. Rate the business model on a scale from 1 to 10:
+      - 1 = Very poor economics (high CAC, low LTV, unscalable)
+      - 10 = Excellent economics (low CAC, high LTV, high margin, scalable)
 
   ---
+  Respond in **strict JSON only** (no markdown, no commentary). Use **double quotes** for all keys and string values.
 
-  Return your response in **JSON** format only, like:
+  Return your response in this exact JSON structure:
 
-  ```json
   {
-    "unit_economics": "Short summary of key economic levers such as CAC, LTV, gross margin, payback period, and scalability.",
-    "economics_score": number (1–10)
+    "unit_economics": {
+      "revenue_drivers": ["string", "..."],
+      "cost_drivers": ["string", "..."],
+      "key_metrics": {
+        "customer_acquisition_cost (CAC)": "string",
+        "lifetime_value (LTV)": "string",
+        "gross_margin": "string",
+        "payback_period": "string",
+        "scalability": "string"
+      }
+    },
+    "economics_score": number
   }
-

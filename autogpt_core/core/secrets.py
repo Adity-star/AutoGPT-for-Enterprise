@@ -33,14 +33,14 @@ class SecretsManager(BaseSettings):
     APP_NAME: str = "AutoGPT For Enterprises"
 
     def validate(self):
-       
         missing_keys = []
-        for key, value in self.dict().items():
-            if value is None:
+        for key in self.model_fields:
+            if getattr(self, key, None) is None:
                 missing_keys.append(key)
         if missing_keys:
             raise RuntimeError(f"Missing required environment variables: {missing_keys}")
         logger.info("All required environment variables are present.")
+
 
 # Initialize settings once, reuse across your app
 secrets = SecretsManager()

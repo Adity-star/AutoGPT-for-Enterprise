@@ -8,25 +8,25 @@ logger.error("Error message here")
 
 
 
-import asyncio
-import logging
-from autogpt_core.modules.market_researcher.graph import get_or_generate_market_research_idea
+# import asyncio
+# import logging
+# from autogpt_core.modules.market_researcher.graph import get_or_generate_market_research_idea
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
-async def main():
-    """Main entry point for the market research agent"""
-    try:
-        results = await get_or_generate_market_research_idea()
-        print("Market Research Results:")
-        import json
-        print(json.dumps(results, indent=2))
-    except Exception as e:
-        logger.error(f"Error running market research agent: {e}")
+# async def main():
+#     """Main entry point for the market research agent"""
+#     try:
+#         results = await get_or_generate_market_research_idea()
+#         print("Market Research Results:")
+#         import json
+#         print(json.dumps(results, indent=2))
+#     except Exception as e:
+#         logger.error(f"Error running market research agent: {e}")
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# if __name__ == "__main__":
+#     asyncio.run(main())
 
 # import asyncio
 # from autogpt_core.modules.landing_page_builder.landing_page_graph import landing_page_graph  
@@ -64,24 +64,26 @@ if __name__ == "__main__":
 
 
 
-# from autogpt_core.modules.blog_writer.blog_generator import blog_generator_graph
-# import asyncio
-
-# async def main():
-#     graph = blog_generator_graph()
-
-#     initial_state = {} 
-#     final_state = await graph.ainvoke({})
-
-#     print("\n✅ Blog generated successfully!\n")
-#     print("📝 Final Draft:\n")
-#     print(final_state.get("state").blog_draft or "No draft found.")
-
-# if __name__ == "__main__":
-#     asyncio.run(main())
+from autogpt_core.modules.blog_writer.blog_generator import blog_generator_graph
+import asyncio
+from autogpt_core.modules.blog_writer.blog_services.blog_state import BlogWriterAgentState
 
 
-from utils.idea_memory import load_ideas_from_db
+async def main():
+    graph = blog_generator_graph()
 
-load_ideas_from_db()
+    initial_state = BlogWriterAgentState()
+    final_state = await graph.ainvoke(initial_state)
+
+    print("\n✅ Blog generated successfully!\n")
+    print("📝 Final Draft:\n")
+    print(final_state.get("state").blog_draft or "No draft found.")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+
+# from utils.idea_memory import load_ideas_from_db
+
+# load_ideas_from_db()
 

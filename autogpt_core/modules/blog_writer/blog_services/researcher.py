@@ -7,6 +7,7 @@ from autogpt_core.modules.blog_writer.blog_services.blog_state import BlogWriter
 from autogpt_core.core.secrets import secrets
 from autogpt_core.core.llm_service import LLMService
 
+
 async def fetch_serp_results(query: str, num_results: int = 5) -> str:
     url = "https://serpapi.com/search"
     params = {
@@ -26,7 +27,7 @@ async def fetch_serp_results(query: str, num_results: int = 5) -> str:
         except Exception as e:
             logger.error(f"SERP API error: {e}")
             return ""
-
+        
 async def run_blog_research(state: BlogWriterAgentState) -> BlogWriterAgentState:
     if not state.idea_data:
         raise ValueError("Missing idea data for research.")
@@ -53,10 +54,11 @@ async def run_blog_research(state: BlogWriterAgentState) -> BlogWriterAgentState
     """
 
     try:
-
-     summary = await LLMService.sync_chat(prompt)
+        summary = await LLMService.chat(prompt)  # Use async chat method
+        summary = summary.strip()
     except Exception as e:
-        logger.info("LLM failed to generate research summery: {e}")
-        state.research_summary = summary.strip()
+        logger.error(f"LLM failed to generate research summary: {e}")
+        summary = "LLM research summary unavailable."
 
-    return state
+    # Update state with the research summary
+    return state.model_copy(update={"research_summary": summary})
