@@ -1,6 +1,3 @@
- # SERP-based content research
-
-import os
 import httpx
 from utils.logger import logger
 from autogpt_core.modules.blog_writer.blog_services.blog_state import BlogWriterAgentState
@@ -22,12 +19,17 @@ async def fetch_serp_results(query: str, num_results: int = 5) -> str:
             response = await client.get(url, params=params)
             response.raise_for_status()
             data = response.json()
-            snippets = [result["snippet"] for result in data.get("organic_results", []) if "snippet" in result]
+            snippets = [
+                result["snippet"] 
+                for result in data.get("organic_results", []) 
+                if "snippet" in result
+            ]
             return "\n".join(snippets[:num_results])
         except Exception as e:
             logger.error(f"SERP API error: {e}")
             return ""
-        
+
+
 async def run_blog_research(state: BlogWriterAgentState) -> BlogWriterAgentState:
     if not state.idea_data:
         raise ValueError("Missing idea data for research.")
@@ -54,11 +56,12 @@ async def run_blog_research(state: BlogWriterAgentState) -> BlogWriterAgentState
     """
 
     try:
-        summary = await LLMService.chat(prompt)  # Use async chat method
+        llm_service = LLMService()  # Instantiate service (adjust if needed)
+        summary = await llm_service.chat(prompt)
         summary = summary.strip()
     except Exception as e:
         logger.error(f"LLM failed to generate research summary: {e}")
         summary = "LLM research summary unavailable."
 
-    # Update state with the research summary
+    # Return updated copy of state with new research summary
     return state.model_copy(update={"research_summary": summary})
