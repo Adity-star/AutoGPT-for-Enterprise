@@ -11,7 +11,7 @@ from autogpt_core.core.secrets import secrets
 from pytrends.request import TrendReq
 
 
-from autogpt_core.modules.market_researcher.state import AnalysisConfig, MarketResearchState, IdeaResponse
+from autogpt_core.modules.market_researcher.state import AnalysisConfig, MarketResearchState
 from autogpt_core.modules.market_researcher.services.support_tools import safe_parse_json_from_llm, safe_parse_json_response
 from autogpt_core.modules.market_researcher.services.support_tools import search_competitors
 from modules.market_researcher.services.reddit_service import RedditService
@@ -337,7 +337,6 @@ async def generate_idea_list(state: MarketResearchState) -> MarketResearchState:
         state.errors.append(error_msg)
         state.idea_list = []
         return state
-
 
 
 async def analyze_single_idea_demand(idea: Dict[str, Any]) -> Dict[str, Any]:
@@ -863,7 +862,6 @@ async def store_results_to_file(state: MarketResearchState) -> MarketResearchSta
                 logger.info(" Best idea saved to DB.")
             except Exception as db_err:
                 logger.warning(f" Could not save best idea to DB: {db_err}")
-
 
         return state
 

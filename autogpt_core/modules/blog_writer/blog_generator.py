@@ -14,8 +14,8 @@ logger = logger = logging.getLogger(__name__)
 def load_idea_node(state: BlogWriterAgentState):
     logger.info(f"load_idea_node received state: {state}")
     new_state = load_blog_idea(state)
-    logger.info(f"Idea loaded: {new_state.idea_data.get('idea')}")
-    return {"state": new_state}
+    return new_state
+
 
 async def research_node(state: BlogWriterAgentState):
     logger.info(f"research_node received state: {state}")
@@ -23,16 +23,18 @@ async def research_node(state: BlogWriterAgentState):
         logger.error("Missing idea_data in state!")
         raise ValueError("Missing idea_data in state!")
     new_state = await run_blog_research(state)
-    return {"state": new_state}
+    return new_state
 
 
 async def keyword_node(state: BlogWriterAgentState):
-    new_state = await extract_keywords(state)
+    keywords = await extract_keywords(state.research_summary or "")
+    new_state = state.model_copy(update={"keywords": keywords})
     return {"state": new_state}
+
 
 async def draft_node(state: BlogWriterAgentState):
     new_state = await generate_blog_draft(state)
-    return {"state": new_state}
+    return new_state
 
 
 def blog_generator_graph():

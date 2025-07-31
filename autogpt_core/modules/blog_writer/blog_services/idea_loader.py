@@ -1,8 +1,6 @@
- # Loads latest idea from DB
 from utils.logger import logging
 from autogpt_core.utils.idea_memory import load_ideas_from_db
 from autogpt_core.modules.blog_writer.blog_services.blog_state import BlogWriterAgentState
-
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +17,8 @@ def load_blog_idea(state: BlogWriterAgentState) -> BlogWriterAgentState:
         raise ValueError("No validated business idea found in memory.")
 
     idea_data = ideas[0]
-    logger.info(f"Idea loaded: {idea_data['idea']}")
+    logger.info(f"Idea loaded: {idea_data.get('idea', '<unknown>')}")
 
-    # Update and return a new state instance
-    return state.model_copy(update={"idea_data": idea_data})
+    
+
+    return  state.model_copy(update={"idea_data": idea_data})

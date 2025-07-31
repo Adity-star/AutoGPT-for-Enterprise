@@ -5,6 +5,7 @@ from autogpt_core.modules.blog_writer.blog_services.blog_state import BlogWriter
 from autogpt_core.core.llm_service import LLMService
 from utils.logger import logger
 
+
 async def generate_blog_draft(state: BlogWriterAgentState) -> BlogWriterAgentState:
     if not (state.idea_data and state.research_summary and state.keywords):
         raise ValueError("Missing data required to generate a blog draft.")
