@@ -1,0 +1,47 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2025-08-19T23:50:20.579586",
+    "execution_time_seconds": 19842.04,
+    "total_ideas_processed": 5,
+    "total_errors": 0
+  },
+  "best_business_idea": {
+    "idea": "Niche Market Consulting",
+    "trend_score": 4.53,
+    "demand_analysis": "The market demand for Niche Market Consulting is increasing as more businesses seek specialized expertise to address unique challenges and capitalize on specific opportunities. This type of consulting allows companies to tap into deep knowledge and experience that is not readily available in-house or through generalist consulting firms.",
+    "demand_score": 6,
+    "competition_analysis": "No competition analysis available (missing SerpAPI key)",
+    "competition_score": 6,
+    "unit_economics": {
+      "revenue_drivers": [
+        "consulting fees",
+        "project-based revenue"
+      ],
+      "cost_drivers": [
+        "salaries",
+        "marketing expenses",
+        "consultant training"
+      ],
+      "key_metrics": {
+        "customer_acquisition_cost (CAC)": "$5,000",
+        "lifetime_value (LTV)": "$50,000",
+        "gross_margin": "80%",
+        "payback_period": "6 months",
+        "scalability": "high"
+      }
+    },
+    "economics_score": 5,
+    "final_score": 54.0,
+    "scoring_breakdown": "Demand: 6/10, Competition: 6/10, Economics: 5/10",
+    "validation_score": 6.0,
+    "recommendation": " Not Recommended",
+    "validation_summary": "Validation Score: 6.0/10 -  Not Recommended"
+  },
+  "errors": [],
+  "config": {
+    "max_retries": 2,
+    "batch_size": 3,
+    "timeout": 30,
+    "model_name": "meta-llama/llama-4-scout-17b-16e-instruct"
+  }
+}
