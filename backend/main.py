@@ -13,6 +13,7 @@ from modules.market_researcher.state import MarketResearchState, AnalysisConfig
 from backend.logging_config import setup_logging
 from backend.error_handler import handle_exception, ValidationError, APIError
 from modules.market_researcher.nodes import parallel_analysis
+from autogpt_core.planner import AgentPlanner
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -20,6 +21,7 @@ load_dotenv()
 logger = setup_logging("market_research_api")
 
 app = FastAPI(title="Market Research Agent API")
+planner = AgentPlanner()
 
 # Allow frontend access
 app.add_middleware(
@@ -123,6 +125,17 @@ async def analyze_single_idea(request: MarketResearchRequest):
         )
 
 
+class PlanRequest(BaseModel):
+    query: str
+
+
+class PlanResponse(BaseModel):
+    steps: list
+
+@app.post("/plan", response_model=PlanResponse)
+async def create_plan(request: PlanRequest):
+    steps = planner.plan(request.query)
+    return PlanResponse(steps=steps)
 
 @app.get("/api/health")
 async def health_check():
