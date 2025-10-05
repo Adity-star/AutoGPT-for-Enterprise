@@ -135,9 +135,11 @@ async def get_or_generate_market_research_idea(state: Optional[MarketResearchSta
 
     logger.info("No recent idea found. Running full market research agent...")
     result = await run_market_research_agent(state.config)
+    logger.info(f"Result from run_market_research_agent: {result}")
 
     if result and "best_business_idea" in result and result["best_business_idea"]:
         best_idea = result["best_business_idea"]
+        logger.info(f"Best idea before saving: {best_idea}")
         best_idea["created_at"] = datetime.utcnow().isoformat()
         save_idea_to_db(best_idea)
         return result

@@ -8,7 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 import os
-from autogpt_core.config.prompts.prompts import email_generation_prompt
+from autogpt_core.config.prompts.prompts import get_email_generation_prompt
 
 load_dotenv()
 
@@ -45,7 +45,8 @@ def load_campaign_content(state: CampaignState) -> CampaignState:
 
 
 
-email_prompt = ChatPromptTemplate.from_messages(email_generation_prompt)
+system_prompt, user_prompt = get_email_generation_prompt(product="{product}", target_customer="{target_customer}", benefits="{benefits}")
+email_prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", user_prompt)])
 
 
 def generate_email_copy(state: CampaignState) -> CampaignState:

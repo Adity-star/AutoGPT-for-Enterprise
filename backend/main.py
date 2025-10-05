@@ -1,146 +1,68 @@
 from dotenv import load_dotenv
 load_dotenv()
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
-import uvicorn
+from typing import Optional, Dict, Any
 import asyncio
 
-from utils.logger import logging
-from modules.market_researcher.graph import get_or_generate_market_research_idea
-from modules.market_researcher.state import MarketResearchState, AnalysisConfig
+from autogpt_core.utils.logger import logging
+from autogpt_core.modules.market_researcher.graph import get_or_generate_market_research_idea
+from autogpt_core.modules.market_researcher.state import MarketResearchState, AnalysisConfig
 from backend.logging_config import setup_logging
 from backend.error_handler import handle_exception, ValidationError, APIError
-from modules.market_researcher.nodes import parallel_analysis
+from autogpt_core.modules.market_researcher.nodes import parallel_analysis
 from autogpt_core.planner import AgentPlanner
-from dotenv import load_dotenv
-load_dotenv()
 
 # Configure logging with timestamped files
 logger = setup_logging("market_research_api")
 
-app = FastAPI(title="Market Research Agent API")
-planner = AgentPlanner()
-
-# Allow frontend access
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-class MarketResearchRequest(BaseModel):
-    user_idea: Optional[str] = None
-    max_retries: Optional[int] = 2
-    batch_size: Optional[int] = 3
-    timeout: Optional[int] = 30
-    enable_caching: Optional[bool] = True
+async def run_market_research(
+    user_idea: Optional[str] = None,
+    max_retries: Optional[int] = 2,
+    batch_size: Optional[int] = 3,
+    timeout: Optional[int] = 30,
+    enable_caching: Optional[bool] = True,
     cache_ttl_minutes: Optional[int] = 60
+) -> Dict[str, Any]:
+    """
+    Runs the market research process.
 
-class MarketResearchResponse(BaseModel):
-    status: str
-    best_idea: Optional[Dict[str, Any]] = None
-    error: Optional[Dict[str, Any]] = None
+    Args:
+        user_idea: The user's business idea.
+        max_retries: The maximum number of retries for each step.
+        batch_size: The batch size for parallel analysis.
+        timeout: The timeout for each step.
+        enable_caching: Whether to enable caching.
+        cache_ttl_minutes: The cache TTL in minutes.
 
-
-@app.post("/api/research", response_model=MarketResearchResponse)
-async def run_market_research(request: MarketResearchRequest):
+    Returns:
+        The result of the market research.
+    """
     try:
         logger.info("Received market research request")
 
         # Validate parameters
-        if request.max_retries < 0:
-            raise ValidationError("max_retries must be non-negative", {"max_retries": request.max_retries})
-        if request.batch_size < 1:
-            raise ValidationError("batch_size must be >= 1", {"batch_size": request.batch_size})
+        if max_retries < 0:
+            raise ValidationError("max_retries must be non-negative", {"max_retries": max_retries})
+        if batch_size < 1:
+            raise ValidationError("batch_size must be >= 1", {"batch_size": batch_size})
 
         # Create config and state
         config = AnalysisConfig(
-            max_retries=request.max_retries,
-            batch_size=request.batch_size,
-            timeout=request.timeout,
-            enable_caching=request.enable_caching,
-            cache_ttl_minutes=request.cache_ttl_minutes
+            max_retries=max_retries,
+            batch_size=batch_size,
+            timeout=timeout,
+            enable_caching=enable_caching,
+            cache_ttl_minutes=cache_ttl_minutes
         )
 
         state = MarketResearchState()
-        state.user_idea = request.user_idea
+        state.user_idea = user_idea
         state.config = config
 
         # Call caching wrapper with state
         result = await get_or_generate_market_research_idea(state)
 
-        best_idea = result.get("best_business_idea", {})
-
-        return MarketResearchResponse(
-            status="success",
-            best_idea=best_idea
-        )
+        return {"status": "success", "best_idea": result.get("best_business_idea", {})}
 
     except Exception as e:
         error_details = handle_exception(e)
-        return MarketResearchResponse(
-            status="error",
-            error=error_details
-        )
-
-
-@app.post("/api/analyze_idea", response_model=MarketResearchResponse)
-async def analyze_single_idea(request: MarketResearchRequest):
-    try:
-        if not request.user_idea:
-            raise ValidationError("user_idea is required for single idea analysis", {})
-
-        config = AnalysisConfig(
-            max_retries=request.max_retries,
-            batch_size=request.batch_size,
-            timeout=request.timeout,
-            enable_caching=request.enable_caching,
-            cache_ttl_minutes=request.cache_ttl_minutes
-        )
-
-        # Inject user idea and config into state
-        state = MarketResearchState(
-            user_idea=request.user_idea,
-            config=config
-        )
-
-        # This now handles analysis + validation (skipping generation)
-        result = await get_or_generate_market_research_idea(state)
-
-        return MarketResearchResponse(
-            status="success",
-            best_idea=result.get("best_business_idea", {})
-        )
-
-    except Exception as e:
-        error_details = handle_exception(e)
-        return MarketResearchResponse(
-            status="error",
-            error=error_details
-        )
-
-
-class PlanRequest(BaseModel):
-    query: str
-
-
-class PlanResponse(BaseModel):
-    steps: list
-
-@app.post("/plan", response_model=PlanResponse)
-async def create_plan(request: PlanRequest):
-    steps = planner.plan(request.query)
-    return PlanResponse(steps=steps)
-
-@app.get("/api/health")
-async def health_check():
-    return {"status": "healthy"}
-
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+        return {"status": "error", "error": error_details}

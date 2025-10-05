@@ -8,7 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 
 from modules.landing_page_builder.page_services.landing_page import LandingPageContent
-from autogpt_core.config.prompts.prompts import content_generation_prompt
+from autogpt_core.config.prompts.prompts import get_landing_page_prompt
 from utils.logger import logging
 from autogpt_core.core.secrets import secrets
 
@@ -21,7 +21,14 @@ parser = PydanticOutputParser(pydantic_object=LandingPageContent)
 
 # Step 1: Define prompt using ChatPromptTemplate
 prompt_template = ChatPromptTemplate.from_template(
-    content_generation_prompt + "\n{format_instructions}"
+    get_landing_page_prompt(
+        idea="{idea}",
+        recommendation="{recommendation}",
+        demand_analysis="{demand_analysis}",
+        competition_analysis="{competition_analysis}",
+        unit_economics="{unit_economics}",
+        format_instructions="{format_instructions}"
+    )
 )
 
 # Step 2: Initialize LLM client

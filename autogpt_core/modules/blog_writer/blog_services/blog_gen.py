@@ -8,7 +8,8 @@ from utils.logger import logger
 
 async def generate_blog_draft(state: BlogWriterAgentState) -> BlogWriterAgentState:
     if not (state.idea_data and state.research_summary and state.keywords):
-        raise ValueError("Missing data required to generate a blog draft.")
+        logger.warning("Missing data required to generate a blog draft. Skipping draft generation.")
+        return state.model_copy(update={"blog_draft": "Missing data for blog draft."})
 
     idea = state.idea_data.get("idea")
     research = state.research_summary

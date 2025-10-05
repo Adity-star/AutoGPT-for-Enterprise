@@ -1,6 +1,6 @@
 from backend.api_schema import ResearchInput
-from modules.market_researcher.nodes import run_market_agent as langchain_runner
+from backend.main import run_market_research
 
-def run_market_agent(input: ResearchInput):
+async def run_market_agent(input: ResearchInput):
     input_dict = input.dict()
-    return langchain_runner(input_dict)
+    return await run_market_research(**input_dict)

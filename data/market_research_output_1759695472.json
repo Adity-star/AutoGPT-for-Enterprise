@@ -1,0 +1,48 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2025-10-06T01:47:52.839000",
+    "execution_time_seconds": 19813.87,
+    "total_ideas_processed": 5,
+    "total_errors": 0
+  },
+  "best_business_idea": {
+    "idea": "AI Implementation Success Platform",
+    "trend_score": 0.0,
+    "demand_analysis": "The market demand for an AI Implementation Success Platform is high due to the increasing adoption of AI across industries and the challenges organizations face in successfully implementing and integrating AI solutions. The need for a platform that can streamline and ensure successful AI implementation is growing rapidly.",
+    "demand_score": 6,
+    "competition_analysis": "No competition analysis available (missing SerpAPI key)",
+    "competition_score": 6,
+    "unit_economics": {
+      "revenue_drivers": [
+        "Annual subscription fees",
+        "Implementation services",
+        "Ongoing support and maintenance"
+      ],
+      "cost_drivers": [
+        "Sales and marketing expenses",
+        "AI implementation and development costs",
+        "Customer support and success team"
+      ],
+      "key_metrics": {
+        "customer_acquisition_cost (CAC)": "$50,000",
+        "lifetime_value (LTV)": "$200,000",
+        "gross_margin": "80%",
+        "payback_period": "6 months",
+        "scalability": "High"
+      }
+    },
+    "economics_score": 5,
+    "final_score": 54.0,
+    "scoring_breakdown": "Demand: 6/10, Competition: 6/10, Economics: 5/10",
+    "validation_score": 6.0,
+    "recommendation": " Not Recommended",
+    "validation_summary": "Validation Score: 6.0/10 -  Not Recommended"
+  },
+  "errors": [],
+  "config": {
+    "max_retries": 2,
+    "batch_size": 3,
+    "timeout": 30,
+    "model_name": "meta-llama/llama-4-scout-17b-16e-instruct"
+  }
+}
